@@ -1,0 +1,20 @@
+
+piloting:
+  line:
+    startStation:
+      longitude: 111.22
+      latitude: 222.13
+      name: a站
+    endStation:
+      longitude: 111.22
+      latitude: 222.13
+      name: b站
+    cameraSet:
+      - longitude: 111.22
+        latitude: 111.22
+        name: 1号口
+        url: http://xxxxx
+      - longitude: 111.22
+        latitude: 111.22
+        name: 2号口
+        url: http://xxxxx
