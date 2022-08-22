@@ -15,16 +15,8 @@ public class WebSocketConstant {
     /**
      * websocket 消息类型
      */
-    public static final String WARN_MSG_TYPE = "warn";
-    public static final String IRON_SHOE_MSG_TYPE = "ironShoe";
-    public static final String ORDER_MSG_TYPE = "order";
-    public static final String LOCATION_MSG_TYPE = "location";
-    public static final String CAMERA_MSG_TYPE = "camera";
-    public static final String JOB_PLAN_MSG_TYPE = "jobPlan";
-    public static final String SPEED_MSG_TYPE = "speed";
-    public static final String AI_WARN_TYPE="aiWarn";
-    public static final String PERSON_OFFLINE="offline";
-    public static final String BRAKE_MSG_TYPE="brake";
+    public static final String VIDEO_PILOTING = "video_piloting";
+
 
     /**
      * session过期时间 毫秒值

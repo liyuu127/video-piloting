@@ -1,6 +1,8 @@
 package com.liyu.piloting.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * @author liyu
@@ -8,7 +10,9 @@ import lombok.Data;
  * description
  */
 @Data
-public class StationPosition {
+@AllArgsConstructor
+@NoArgsConstructor
+public class StationPosition implements Cloneable {
     /**
      * 经度
      */
@@ -19,4 +23,13 @@ public class StationPosition {
     private double latitude;
 
     private String name;
+
+    @Override
+    public StationPosition clone() {
+        try {
+            return (StationPosition) super.clone();
+        } catch (CloneNotSupportedException e) {
+            return new StationPosition(this.longitude, this.latitude, this.name);
+        }
+    }
 }

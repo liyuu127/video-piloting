@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -17,6 +19,22 @@ import java.util.Set;
 @Configuration
 public class LineConfig {
     private StationPosition startStation;
-    private Set<Camera> cameraSet;
+    private List<Camera> cameraList;
     private StationPosition endStation;
+
+
+    public LineInstance lineInstance() {
+        LineInstance lineInstance = new LineInstance();
+        lineInstance.setStartStation(startStation.clone());
+        lineInstance.setEndStation(endStation.clone());
+        List<Camera> cameraList = new ArrayList<>();
+        for (Camera camera : this.cameraList) {
+            cameraList.add(camera.clone());
+        }
+        lineInstance.setCameraList(cameraList);
+
+        lineInstance.directionPositive();
+        lineInstance.lineStatusInit();
+        return lineInstance;
+    }
 }

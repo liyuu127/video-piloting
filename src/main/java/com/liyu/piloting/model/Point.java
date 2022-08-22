@@ -17,4 +17,6 @@ public class Point {
      * 维度
      */
     private double latitude;
+
+    private long timestamp;
 }

@@ -9,7 +9,7 @@ piloting:
       longitude: 111.22
       latitude: 222.13
       name: b站
-    cameraSet:
+    cameraList:
       - longitude: 111.22
         latitude: 111.22
         name: 1号口
