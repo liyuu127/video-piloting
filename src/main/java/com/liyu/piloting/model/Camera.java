@@ -16,6 +16,7 @@ public class Camera implements Cloneable {
 
     private final static int STATUS_UN_PULL = 1;
     private final static int STATUS_PULLED = 2;
+    private final static int STATUS_PULL_OVER = 3;
     /**
      * 经度
      */
@@ -48,6 +49,14 @@ public class Camera implements Cloneable {
 
     public boolean statusIsPull() {
         return this.status == STATUS_PULLED;
+    }
+
+    public void statusPullOver() {
+        this.status = STATUS_PULL_OVER;
+    }
+
+    public boolean statusIsPullOver() {
+        return this.status == STATUS_PULL_OVER;
     }
 
     @Override

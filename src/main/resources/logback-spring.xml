@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="10 seconds">
+
+    <contextName>logback</contextName>
+
+    <!-- 彩色日志 -->
+    <!-- 彩色日志依赖的渲染类 -->
+    <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
+    <conversionRule conversionWord="wex"
+                    converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter"/>
+    <conversionRule conversionWord="wEx"
+                    converterClass="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter"/>
+    <!-- 彩色日志格式 %date表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度 %msg：日志消息，%n是换行符-->
+    <property name="CONSOLE_LOG_PATTERN"
+              value="${CONSOLE_LOG_PATTERN:-%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}"/>
+
+
+    <property name="PATTERN" value="%d{HH:mm:ss.SSS} [%thread] %-5level %logger{20} - [%method,%line] - %msg%n"/>
+
+    <!-- 定义日志存储的路径，不要配置相对路径 -->
+    <property name="FILE_PATH" value="logs"/>
+
+    <!-- 控制台输出日志 -->
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- 日志级别过滤INFO以下 -->
+        <encoder>
+            <!-- 按照上面配置的CONSOLE_LOG_PATTERN来打印日志 -->
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!--每天生成一个日志文件，保存30天的日志文件。rollingFile用来切分文件的 -->
+    <appender name="debug" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 日志级别过滤DEBUG以下 -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>DEBUG</level>
+        </filter>
+        <file>${FILE_PATH}/video_piloting_debug.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${FILE_PATH}/video_piloting_debug.%d.%i.log</fileNamePattern>
+            <!-- keep 15 days' worth of history -->
+            <maxHistory>30</maxHistory>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <!-- 日志文件的最大大小 -->
+                <maxFileSize>30MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!--每天生成一个日志文件，保存30天的日志文件。rollingFile用来切分文件的 -->
+    <appender name="info" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 日志级别过滤INFO以下 -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        <file>${FILE_PATH}/video_piloting_info.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${FILE_PATH}/video_piloting_info.%d.%i.log</fileNamePattern>
+            <!-- keep 15 days' worth of history -->
+            <!-- 最多日志文件数，必须和CleanHistoryOnStart一起使用 -->
+            <maxHistory>30</maxHistory>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <!-- 日志文件的最大大小 -->
+                <maxFileSize>30MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="error" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 日志级别过滤ERROR以下 -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <file>${FILE_PATH}/video_piloting_error.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${FILE_PATH}/video_piloting_error.%d.%i.log</fileNamePattern>
+            <!-- keep 15 days' worth of history -->
+            <!-- 最多日志文件数，必须和CleanHistoryOnStart一起使用 -->
+            <maxHistory>30</maxHistory>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <!-- 日志文件的最大大小 -->
+                <maxFileSize>30MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!--业务代码输出到debug和info的appender，输出两个文件，debug包含了mybatis的sql信息，additivity为false，否则会打印两次-->
+    <logger name="com.yelink" level="DEBUG" additivity="false">
+        <appender-ref ref="console"/>
+        <appender-ref ref="info"/>
+        <appender-ref ref="error"/>
+        <!--<appender-ref ref="debug" />-->
+    </logger>
+
+    <!-- 日志输出级别，包括系统和业务的日志级别 -->
+    <root level="INFO">
+        <appender-ref ref="console"/>
+        <appender-ref ref="info"/>
+        <!--<appender-ref ref="debug" />-->
+    </root>
+</configuration>

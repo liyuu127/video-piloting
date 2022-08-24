@@ -15,7 +15,8 @@ public class WebSocketConstant {
     /**
      * websocket 消息类型
      */
-    public static final String VIDEO_PILOTING = "video_piloting";
+    public static final String VIDEO_PILOTING_CAMERA = "video_piloting_camera";
+    public static final String VIDEO_PILOTING_CAMERA_OVER = "video_piloting_camera_over";
 
 
     /**

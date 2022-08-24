@@ -13,9 +13,22 @@ import java.util.Set;
 @Data
 public class LineInstance {
     private static int LINE_STATUS_INIT = 1;
+    /**
+     * 进入终点站
+     */
     private static int LINE_STATUS_START = 2;
+    /**
+     * 摄像头全部拉取完
+     */
     private static int LINE_STATUS_ALL_PULL = 3;
+    /**
+     * 终点站
+     */
     private static int LINE_STATUS_END = 4;
+    /**
+     * 停车
+     */
+    private static int LINE_STATUS_STOP = 5;
 
     private static int LINE_DIRECTION_POSITIVE = 1;
     private static int LINE_DIRECTION_NEGATIVE = 2;

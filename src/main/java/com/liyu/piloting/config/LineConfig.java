@@ -1,5 +1,8 @@
-package com.liyu.piloting.model;
+package com.liyu.piloting.config;
 
+import com.liyu.piloting.model.Camera;
+import com.liyu.piloting.model.LineInstance;
+import com.liyu.piloting.model.StationPosition;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
