@@ -67,12 +67,12 @@ public class PositionTest {
             point.setLongitude(start.getLongitude() + _lon);
             point.setTimestamp(System.currentTimeMillis());
 
-//            log.info("point = {}", point);
+            log.info("point = {}", point);
 
             double distance = EarthMapUtil.distance(pre.getLatitude() , pre.getLongitude() , point.getLatitude(), point.getLongitude());
             double sum = EarthMapUtil.distance(start.getLatitude() + _lat, start.getLongitude() + _lon, start.getLatitude(), start.getLongitude());
             pre = point;
-//            log.info("distance = {},sum = {}", distance, sum);
+            log.debug("distance = {},sum = {}", distance, sum);
 
             pilotingService.process(point);
         }

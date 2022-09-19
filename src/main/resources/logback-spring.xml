@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration scan="true" scanPeriod="10 seconds">
-
+    <springProperty scope="context" name="logLevel" source="log.level"/>
+    <springProperty scope="context" name="logPath" source="log.path"/>
     <contextName>logback</contextName>
 
     <!-- 彩色日志 -->
@@ -32,8 +33,13 @@
     <!--每天生成一个日志文件，保存30天的日志文件。rollingFile用来切分文件的 -->
     <appender name="debug" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <!-- 日志级别过滤DEBUG以下 -->
-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+<!--        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">-->
+<!--            <level>DEBUG</level>-->
+<!--        </filter>-->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
             <level>DEBUG</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
         </filter>
         <file>${FILE_PATH}/video_piloting_debug.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -75,8 +81,13 @@
 
     <appender name="error" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <!-- 日志级别过滤ERROR以下 -->
-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+<!--        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">-->
+<!--            <level>ERROR</level>-->
+<!--        </filter>-->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
             <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
         </filter>
         <file>${FILE_PATH}/video_piloting_error.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -96,17 +107,18 @@
     </appender>
 
     <!--业务代码输出到debug和info的appender，输出两个文件，debug包含了mybatis的sql信息，additivity为false，否则会打印两次-->
-    <logger name="com.yelink" level="DEBUG" additivity="false">
-        <appender-ref ref="console"/>
-        <appender-ref ref="info"/>
-        <appender-ref ref="error"/>
-        <!--<appender-ref ref="debug" />-->
-    </logger>
+<!--    <logger name="com.liyu.piloting" level="${logLevel}" additivity="false">-->
+<!--        <appender-ref ref="console"/>-->
+<!--        <appender-ref ref="info"/>-->
+<!--        <appender-ref ref="error"/>-->
+<!--        <appender-ref ref="debug" />-->
+<!--    </logger>-->
 
     <!-- 日志输出级别，包括系统和业务的日志级别 -->
-    <root level="INFO">
+    <root level="${logLevel}">
         <appender-ref ref="console"/>
         <appender-ref ref="info"/>
-        <!--<appender-ref ref="debug" />-->
+        <appender-ref ref="debug" />
+        <appender-ref ref="error"/>
     </root>
 </configuration>

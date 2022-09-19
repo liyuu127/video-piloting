@@ -1,5 +1,9 @@
-
+server:
+  port: 8090
 piloting:
+  rxtx:
+    serial-port-name: COM1
+    baud-rate: 9600
   line:
     startStation:
       longitude: 114.149408
@@ -25,7 +29,7 @@ piloting:
       position-queueCapacity: 20 #位置队列容量
     start:
       lineStart-judgment-position-Count: 10 #判断开始的位置的数量
-      start-judgment-interval-meter: 15 #开始移动时判断距离
+      start-judgment-interval-meter: 14 #开始移动时判断距离
       start-direction-score-threshold: 5 #开始方向计算得分，大于等于此值才判断分数有效
     end:
       line-end-judgment-position-count: 10 #终点判断位置数量
@@ -44,3 +48,6 @@ piloting:
       line-stop-judgment-position-count: 15 #判断停车的位置的数量
       line-stop-judgment-variance: 2 #停车位置数据的方差大小 小于等于此值算停车
       line-stop-judgment-time-interval: 5000 #停车位置计算时间间隔
+log:
+  path: ../log
+  level: DEBUG

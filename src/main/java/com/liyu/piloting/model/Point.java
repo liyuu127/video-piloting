@@ -18,5 +18,7 @@ public class Point {
      */
     private double latitude;
 
+    private double speed;
+
     private long timestamp;
 }

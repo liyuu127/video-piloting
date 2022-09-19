@@ -1,6 +1,7 @@
 package com.liyu.piloting;
 
 import com.liyu.piloting.config.LineConfig;
+import com.liyu.piloting.config.LineJudgmentConfig;
 import com.liyu.piloting.model.LineInstance;
 import com.liyu.piloting.model.Point;
 import com.liyu.piloting.service.PositionTest;
@@ -20,20 +21,23 @@ public class LineTest {
     @Autowired
     private LineConfig lineConfig;
     @Autowired
+    private LineJudgmentConfig lineJudgmentConfig;
+    @Autowired
     private PositionTest positionTest;
 
 
     @Test
     public void lineConfig_init_test() {
-        System.out.println("lineConfig = " + lineConfig);
-        LineInstance lineInstance = lineConfig.lineInstance();
-        System.out.println("lineInstance = " + lineInstance);
-        lineInstance.getStartStation().setName("x");
-        lineInstance.getCameraList().get(0).setName("xx");
-        System.out.println("lineInstance = " + lineInstance);
-        System.out.println("lineConfig = " + lineConfig);
-        System.out.println("lineInstance.directionIsPositive() = " + lineInstance.directionIsPositive());
-        System.out.println("lineInstance.lineStatusIsInit() = " + lineInstance.lineStatusIsInit());
+//        System.out.println("lineConfig = " + lineConfig);
+//        LineInstance lineInstance = lineConfig.lineInstance();
+//        System.out.println("lineInstance = " + lineInstance);
+//        lineInstance.getStartStation().setName("x");
+//        lineInstance.getCameraList().get(0).setName("xx");
+//        System.out.println("lineInstance = " + lineInstance);
+//        System.out.println("lineConfig = " + lineConfig);
+//        System.out.println("lineInstance.directionIsPositive() = " + lineInstance.directionIsPositive());
+//        System.out.println("lineInstance.lineStatusIsInit() = " + lineInstance.lineStatusIsInit());
+        System.out.println("lineJudgmentConfig.toString() = " + lineJudgmentConfig.toString());
     }
 
     @Test

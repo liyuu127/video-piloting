@@ -135,7 +135,7 @@ public class PilotingService {
             int lineEndJudgmentPositionCount = lineJudgmentConfig.getLineEndJudgmentPositionCount();
             if (deque.size() >= lineEndJudgmentPositionCount) {
                 int lineEndSatisfyDistanceMeter = lineJudgmentConfig.getLineEndSatisfyDistanceMeter();
-                int lineEndSatisfyDistanceCount = lineJudgmentConfig.getLineEndSatisfyDistanceCount();
+                int lineEndSatisfyDistanceCount = lineJudgmentConfig.LineEndSatisfyDistanceCount();
 
                 Point referencePoint = new Point();
                 if (lineInstance.directionIsPositive()) {
