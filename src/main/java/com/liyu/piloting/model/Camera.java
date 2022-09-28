@@ -29,6 +29,7 @@ public class Camera implements Cloneable {
     private String name;
 
     private String url;
+    private String deviceSerial;
 
     /**
      * 0：取消，1：未拉流，2：已拉流
@@ -64,7 +65,7 @@ public class Camera implements Cloneable {
         try {
             return (Camera) super.clone();
         } catch (CloneNotSupportedException e) {
-            return new Camera(this.longitude, this.latitude, this.name, this.url, this.status);
+            return new Camera(this.longitude, this.latitude, this.name, this.url, this.deviceSerial, this.status);
         }
     }
 }

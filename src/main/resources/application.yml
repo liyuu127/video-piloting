@@ -16,12 +16,9 @@ piloting:
     cameraList:
       - longitude: 114.157808
         latitude: 22.555602
+        deviceSerial: K30567517
         name: 1号口
-        url: http://xxxxx
-      - longitude: 114.155808
-        latitude: 22.553602
-        name: 2号口
-        url: http://xxxxx
+        url: https://open.ys7.com/v3/openlive/K30567517_1_1.m3u8?expire=1695464623&id=495299587758632960&t=e1d08a6212aaba07ff21e953df75b25c84cfcc954c3e724d7eab2e40b0c947ce&ev=100
   judgment:
     position:
       position-expireTime: 2000 #过期期间间隔 ms
