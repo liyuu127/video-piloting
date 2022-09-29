@@ -50,6 +50,12 @@ piloting:
       line-stop-judgment-position-count: 15 #判断停车的位置的数量
       line-stop-judgment-variance: 2 #停车位置数据的方差大小 小于等于此值算停车
       line-stop-judgment-time-interval: 5000 #停车位置计算时间间隔
+  alarm:
+    search-time-forward-millis: 36000000 #查询时向时间（即告警过期时间）
+    search-time-millis-interval: 5000 #查询间隔时间
+    alarm-type: #告警类型，默认为-1（全部）
+      - 10002
+    status: 0 #告警消息状态：2-所有，1-已读，0-未读，默认为0（未读状态）
 log:
   path: ../log
   level: DEBUG

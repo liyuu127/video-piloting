@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
  * @author liyu
  * date 2022/9/28 18:37
@@ -12,11 +14,11 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ResPage {
+public class AlarmResp {
 
     private String msg;
     private String code;
-    private String data;
+    private List<Alarm> data;
 
     private Page page;
 

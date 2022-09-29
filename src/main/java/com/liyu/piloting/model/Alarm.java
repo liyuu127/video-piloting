@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
  * @author liyu
  * date 2022/9/28 19:18
@@ -235,6 +237,6 @@ public class Alarm {
     private String alarmPicUrl;
     private String customerType;
     private String customerInfo;
-    private String relationAlarms;
+    private List<Alarm> relationAlarms;
 }
 

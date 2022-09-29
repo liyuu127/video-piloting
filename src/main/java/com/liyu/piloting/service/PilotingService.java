@@ -1,5 +1,6 @@
 package com.liyu.piloting.service;
 
+import com.liyu.piloting.config.AlarmConf;
 import com.liyu.piloting.config.LineConfig;
 import com.liyu.piloting.config.LineJudgmentConfig;
 import com.liyu.piloting.model.*;
@@ -32,11 +33,16 @@ public class PilotingService {
     LineConfig lineConfig;
     @Autowired
     LineJudgmentConfig lineJudgmentConfig;
+    @Autowired
+    AlarmService alarmService;
+    @Autowired
+    AlarmConf alarmConf;
 
     private LineInstance lineInstance;
     private Deque<Point> deque;
     private long updateQueueTimestamp = System.currentTimeMillis();
     private long endJudgmentTimestamp = System.currentTimeMillis();
+    private long searchAlarmTimestamp = System.currentTimeMillis();
 
 
     @PostConstruct
@@ -167,6 +173,14 @@ public class PilotingService {
         int pullCameraJudgmentPositionCount = lineJudgmentConfig.getPullCameraJudgmentPositionCount();
         Camera nowCamera = lineInstance.getNowCamera();
         if (nowCamera != null) {
+
+            //拉取告警
+            Long alarmInterval = alarmConf.getSearchTimeMillisInterval();
+            if (System.currentTimeMillis() > alarmInterval + searchAlarmTimestamp) {
+                alarmService.processAlarm(nowCamera.getDeviceSerial());
+                searchAlarmTimestamp = System.currentTimeMillis();
+            }
+
             int pullCameraJudgmentIntervalMeter = lineJudgmentConfig.getPullCameraJudgmentIntervalMeter();
             int pullCameraDirectionScoreThreshold = lineJudgmentConfig.getPullCameraDirectionScoreThreshold();
 
@@ -231,14 +245,17 @@ public class PilotingService {
             //满足具体要求时拉取摄像头
             log.info("pullNextCamera satisfyDistanceCount={},pullCameraSatisfyDistanceCount={},camera={}", satisfyDistanceCount, pullCameraSatisfyDistanceCount, next.toString());
             if (satisfyDistanceCount >= pullCameraSatisfyDistanceCount) {
-                lineInstance.setNowCamera(next);
-                lineInstance.setNextCamera(null);
 
                 WebSocketMessage<Camera> message = new WebSocketMessage<>();
                 message.setContent(next)
                         .setMsgType(VIDEO_PILOTING_CAMERA);
                 WebSocketSender.pushMessageToAll(message);
                 log.info("pullNextCamera websocket pull new camera ={}", next.toString());
+                //查询一次告警
+                alarmService.processAlarm(next.getDeviceSerial());
+                searchAlarmTimestamp = System.currentTimeMillis();
+                lineInstance.setNowCamera(next);
+                lineInstance.setNextCamera(null);
             }
         }
     }
