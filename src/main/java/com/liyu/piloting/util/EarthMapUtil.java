@@ -27,13 +27,6 @@ public class EarthMapUtil {
 
     }
 
-    public Boolean inDistance(double lat1, double lng1, double lat2, double lng2, double distance) {
-        double currentDistance = distance(lat1, lng1, lat2, lng2);
-        //todo
-        log.info("currentDistance={}", currentDistance);
-        return currentDistance <= distance;
-
-    }
 
     /**
      * 谷歌地图的计算公式

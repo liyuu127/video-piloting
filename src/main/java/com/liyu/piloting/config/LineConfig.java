@@ -36,8 +36,7 @@ public class LineConfig {
         }
         lineInstance.setCameraList(cameraList);
 
-        lineInstance.directionPositive();
-        lineInstance.lineStatusInit();
+//        lineInstance.directionPositive();
         return lineInstance;
     }
 }

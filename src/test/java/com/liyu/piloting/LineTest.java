@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Iterator;
 
 @RunWith(SpringRunner.class)
@@ -25,6 +26,32 @@ public class LineTest {
     @Autowired
     private PositionTest positionTest;
 
+
+    @Test
+    public void dequeue_test() {
+        Deque<Integer> deque = new ArrayDeque<>(10);
+        deque.addLast(1);
+        deque.addLast(2);
+        deque.addLast(3);
+        deque.addLast(4);
+        deque.addLast(5);
+        deque.addLast(6);
+        deque.addLast(7);
+        deque.removeFirst();
+
+        int calculatePositionCount = 3;
+        int i = 0;
+        Iterator<Integer> p = deque.iterator();
+        while (p.hasNext()) {
+            Integer next = p.next();
+            //逆向遍历 需要跳过前面时间比较旧的
+            if (i >= deque.size() - calculatePositionCount) {
+                System.out.println("next = " + next);
+            }
+            i++;
+        }
+
+    }
 
     @Test
     public void lineConfig_init_test() {
@@ -81,7 +108,7 @@ public class LineTest {
         ArrayDeque<Point> pointArrayDeque = new ArrayDeque<>(5);
         for (int j = 0; j < 10; j++) {
             Point point = new Point();
-            point.setLongitude(114.149408+j);
+            point.setLongitude(114.149408 + j);
             point.setLatitude(22.547202);
             point.setTimestamp(j);
             pointArrayDeque.addLast(point);

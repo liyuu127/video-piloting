@@ -24,6 +24,11 @@ piloting:
       position-expireTime: 2000 #过期期间间隔 ms
       position-store-interval: 1000 #数据计算间隔 ms
       position-queueCapacity: 20 #位置队列容量
+    direction:
+      direction-judgment-position-count: 4 #判断方向的位置的数量
+      direction-judgment-interval-meter: 14 #开始移动时判断距离
+      direction-score-threshold: 3 #开始方向计算得分，大于等于此值才判断分数有效
+      direction-calculate-interval: 60000 #多久间隔计算一次方向 默认一分钟
     start:
       lineStart-judgment-position-Count: 10 #判断开始的位置的数量
       start-judgment-interval-meter: 14 #开始移动时判断距离

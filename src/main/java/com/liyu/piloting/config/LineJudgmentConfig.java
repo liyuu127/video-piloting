@@ -1,12 +1,8 @@
 package com.liyu.piloting.config;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-
-import javax.annotation.PostConstruct;
 
 /**
  * @author liyu
@@ -24,6 +20,23 @@ public class LineJudgmentConfig {
     private EndConf end;
     private CameraConf camera;
     private StopConf stop;
+    private DirectionConf direction;
+
+
+    public long getDirectionCalculateInterval(){
+        return this.direction.getDirectionCalculateInterval();
+    }
+    public int getDirectionJudgmentPositionCount() {
+        return this.direction.getDirectionJudgmentPositionCount();
+    }
+
+    public int getDirectionJudgmentIntervalMeter() {
+        return this.direction.getDirectionJudgmentIntervalMeter();
+    }
+
+    public int getDirectionScoreThreshold() {
+        return this.direction.getDirectionScoreThreshold();
+    }
 
 
     public int LineEndSatisfyDistanceCount() {

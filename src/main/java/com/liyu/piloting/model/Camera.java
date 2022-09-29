@@ -34,6 +34,7 @@ public class Camera implements Cloneable {
     /**
      * 0：取消，1：未拉流，2：已拉流
      */
+    @Deprecated
     private Integer status = 1;
 
     public void statusUnPull() {

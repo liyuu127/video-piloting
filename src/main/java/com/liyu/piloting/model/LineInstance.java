@@ -40,64 +40,67 @@ public class LineInstance {
      * 1 正向，2：反向
      */
     private Integer direction;
+    private Long directionTimestamp;
     /**
      * 上个拉流地址
      */
     private Camera lastCamera;
     private Camera nowCamera;
+    private Camera nextCamera;
 
     /**
      * 线路状态
      */
-    private Integer status;
-
-
+//    private Integer status;
     public boolean directionIsPositive() {
         return this.direction == LINE_DIRECTION_POSITIVE;
+
     }
 
     public void directionPositive() {
+        this.directionTimestamp = System.currentTimeMillis();
         this.direction = LINE_DIRECTION_POSITIVE;
     }
 
     public void directionNegative() {
+        this.directionTimestamp = System.currentTimeMillis();
         this.direction = LINE_DIRECTION_NEGATIVE;
     }
 
-    public void lineStatusInit() {
-        this.status = LINE_STATUS_INIT;
-
-    }
-
-    public void lineStatusStart() {
-        this.status = LINE_STATUS_START;
-
-    }
-
-    public void lineStatusEnd() {
-        this.status = LINE_STATUS_END;
-    }
-
-    public boolean lineStatusIsInit() {
-        return this.status == LINE_STATUS_INIT;
-
-    }
-
-    public boolean lineStatusIsStart() {
-        return this.status == LINE_STATUS_START;
-
-    }
-
-    public boolean lineStatusIsEnd() {
-        return this.status == LINE_STATUS_END;
-    }
-
-    public boolean lineStatusIsAllPull() {
-        return this.status == LINE_STATUS_ALL_PULL;
-    }
-
-    public void lineStatusAllPull() {
-        this.status = LINE_STATUS_ALL_PULL;
-    }
+//    public void lineStatusInit() {
+//        this.status = LINE_STATUS_INIT;
+//
+//    }
+//
+//    public void lineStatusStart() {
+//        this.status = LINE_STATUS_START;
+//
+//    }
+//
+//    public void lineStatusEnd() {
+//        this.status = LINE_STATUS_END;
+//    }
+//
+//    public boolean lineStatusIsInit() {
+//        return this.status == LINE_STATUS_INIT;
+//
+//    }
+//
+//    public boolean lineStatusIsStart() {
+//        return this.status == LINE_STATUS_START;
+//
+//    }
+//
+//    public boolean lineStatusIsEnd() {
+//        return this.status == LINE_STATUS_END;
+//    }
+//
+//    public boolean lineStatusIsAllPull() {
+//        return this.status == LINE_STATUS_ALL_PULL;
+//    }
+//
+//    public void lineStatusAllPull() {
+//        this.status = LINE_STATUS_ALL_PULL;
+//    }
 
 }
