@@ -20,7 +20,7 @@ public class CameraConf {
     /**
      * 拉取摄像头的符合距离的大小
      */
-    private int pullCameraSatisfyDistanceMeter = 500;
+    private int pullCameraSatisfyDistanceMeter = 1000;
     /**
      * 拉取摄像头的符合距离的位置个数，必须低于采集的数量
      */
@@ -29,12 +29,12 @@ public class CameraConf {
     /**
      * 拉取摄像头方向时判断距离
      */
-    private int pullCameraJudgmentIntervalMeter = 10;
+    private double pullCameraJudgmentIntervalMeter = 1;
 
     /**
      * 摄像头离开位置的数量
      */
-    private int pullCameraOverPositionCount = 5;
+    private int pullCameraOverPositionCount = 4;
     /**
      * 拉取摄像头方向计算得分，大于等于此值才判断分数有效
      */

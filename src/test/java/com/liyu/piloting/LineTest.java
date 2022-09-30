@@ -5,6 +5,7 @@ import com.liyu.piloting.config.LineJudgmentConfig;
 import com.liyu.piloting.model.LineInstance;
 import com.liyu.piloting.model.Point;
 import com.liyu.piloting.service.PositionTest;
+import com.liyu.piloting.util.EarthMapUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;

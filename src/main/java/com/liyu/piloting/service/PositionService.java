@@ -45,18 +45,20 @@ public class PositionService {
             point.setTimestamp(TimeUtil.parseGPRMCTime(date, time));
             log.debug("processMsg $GPRM point={}", point.toString());
             pilotingService.process(point);
-        } else if (msg.startsWith("&GPGGA")) {
-            String[] split = msg.split(",");
-            String time = split[1];
-            String latitude = split[2];
-            String longitude = split[4];
-            log.debug("processMsg $GPGGA time={},latitude={},longitude={}", time, latitude, longitude);
-        } else if (msg.startsWith("$GPGLL")) {
-            String[] split = msg.split(",");
-            String latitude = split[1];
-            String longitude = split[3];
-            String time = split[5];
-            log.debug("processMsg $GPGGA time={},latitude={},longitude={}", time, latitude, longitude);
         }
+
+//        else if (msg.startsWith("&GPGGA")) {
+//            String[] split = msg.split(",");
+//            String time = split[1];
+//            String latitude = split[2];
+//            String longitude = split[4];
+////            log.debug("processMsg $GPGGA time={},latitude={},longitude={}", time, latitude, longitude);
+//        } else if (msg.startsWith("$GPGLL")) {
+//            String[] split = msg.split(",");
+//            String latitude = split[1];
+//            String longitude = split[3];
+//            String time = split[5];
+////            log.debug("processMsg $GPGGA time={},latitude={},longitude={}", time, latitude, longitude);
+//        }
     }
 }

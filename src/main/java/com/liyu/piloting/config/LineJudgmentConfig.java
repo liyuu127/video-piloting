@@ -30,7 +30,7 @@ public class LineJudgmentConfig {
         return this.direction.getDirectionJudgmentPositionCount();
     }
 
-    public int getDirectionJudgmentIntervalMeter() {
+    public double getDirectionJudgmentIntervalMeter() {
         return this.direction.getDirectionJudgmentIntervalMeter();
     }
 
@@ -64,7 +64,7 @@ public class LineJudgmentConfig {
         return this.camera.getPullCameraSatisfyDistanceCount();
     }
 
-    public int getPullCameraJudgmentIntervalMeter() {
+    public double getPullCameraJudgmentIntervalMeter() {
         return this.camera.getPullCameraJudgmentIntervalMeter();
     }
 

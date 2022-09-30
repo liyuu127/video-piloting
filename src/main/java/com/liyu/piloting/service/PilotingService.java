@@ -117,15 +117,22 @@ public class PilotingService {
         int positionQueueCapacity = lineJudgmentConfig.getPositionQueueCapacity();
 
         //当前数据超过2s过期
-        if (now - point.getTimestamp() > positionExpireTime) return true;
+        if (now - point.getTimestamp() > positionExpireTime) {
+            log.debug("pointInQueue expire pre={},positionExpireTime={}", point.getTimestamp(), positionExpireTime);
+            return true;
+        }
 
         //距离上次数据更新是否超过1s
-        if (now - this.updateQueueTimestamp < positionStoreInterval) return true;
+        if (now - this.updateQueueTimestamp < positionStoreInterval) {
+            log.debug("pointInQueue interval pre={},positionStoreInterval={}", updateQueueTimestamp, positionStoreInterval);
+            return true;
+        }
 
         if (deque.size() >= positionQueueCapacity) {
             deque.removeFirst();
         }
         deque.addLast(point);
+        updateQueueTimestamp = System.currentTimeMillis();
 
         return false;
     }
@@ -169,6 +176,8 @@ public class PilotingService {
             nowCameraOverJudgment();
             //判断是否拉取下一个摄像头
             pullNextCamera();
+        } else {
+            log.debug("pullCameraAndAlarm count low deque.size()={},pullCameraJudgmentPositionCount={}", deque.size(), pullCameraJudgmentPositionCount);
         }
     }
 
@@ -182,9 +191,11 @@ public class PilotingService {
             if (System.currentTimeMillis() > alarmInterval + searchAlarmTimestamp) {
                 alarmService.processAlarm(nowCamera.getDeviceSerial());
                 searchAlarmTimestamp = System.currentTimeMillis();
+            } else {
+                log.debug("search alarm pre={},alarmInterval={}", searchAlarmTimestamp, alarmInterval);
             }
 
-            int pullCameraJudgmentIntervalMeter = lineJudgmentConfig.getPullCameraJudgmentIntervalMeter();
+            double pullCameraJudgmentIntervalMeter = lineJudgmentConfig.getPullCameraJudgmentIntervalMeter();
             int pullCameraDirectionScoreThreshold = lineJudgmentConfig.getPullCameraDirectionScoreThreshold();
 
             Point referencePoint = new Point();
@@ -193,7 +204,7 @@ public class PilotingService {
             log.info("nowCameraOverJudgment nowCameraDirection?");
             //相对摄像头方向
             int cameraDirection = directionWithReferencePoint(referencePoint, pullCameraJudgmentPositionCount, pullCameraJudgmentIntervalMeter, pullCameraDirectionScoreThreshold);
-
+            log.info("nowCameraOverJudgment nowCameraDirection={}", cameraDirection);
             //驶离了摄像头指定距离后 可以停止拉流
             if (cameraDirection < 0) {
                 log.info("nowCameraOverJudgment cameraOver?");
@@ -201,6 +212,7 @@ public class PilotingService {
                 int cameraOverSatisfyDistanceCount = lineJudgmentConfig.getCameraOverSatisfyDistanceCount();
                 int cameraOverSatisfyDistanceMeter = lineJudgmentConfig.getCameraOverSatisfyDistanceMeter();
                 int satisfyDistanceCountWithReferencePoint = getSatisfyDistanceCountWithReferencePoint(referencePoint, pullCameraOverPositionCount, cameraOverSatisfyDistanceMeter);
+                log.info("nowCameraOverJudgment satisfyDistanceCountWithReferencePoint={},cameraOverSatisfyDistanceCount={}", satisfyDistanceCountWithReferencePoint, cameraOverSatisfyDistanceCount);
                 //是否满足指定距离
                 if (satisfyDistanceCountWithReferencePoint >= cameraOverSatisfyDistanceCount) {
                     log.info("nowCameraOverJudgment statusPullOver preCameraDirection={},lastCamera()={}", cameraDirection, lineInstance.getLastCamera());
@@ -260,6 +272,8 @@ public class PilotingService {
                 lineInstance.setNowCamera(next);
                 lineInstance.setNextCamera(null);
             }
+        } else {
+            log.info("pullNextCamera next is null");
         }
     }
 
@@ -298,6 +312,7 @@ public class PilotingService {
             long interval = lineJudgmentConfig.getDirectionCalculateInterval();
             //方向还未失效
             if (System.currentTimeMillis() <= interval + lineInstance.getDirectionTimestamp()) {
+                log.debug("directionJudgment not expire pre={},interval={}", lineInstance.getDirectionTimestamp(), interval);
                 return true;
             }
         }
@@ -306,7 +321,7 @@ public class PilotingService {
         int directionJudgmentPositionCount = lineJudgmentConfig.getDirectionJudgmentPositionCount();
 
         if (deque.size() >= directionJudgmentPositionCount) {
-            int directionJudgmentIntervalMeter = lineJudgmentConfig.getDirectionJudgmentIntervalMeter();
+            double directionJudgmentIntervalMeter = lineJudgmentConfig.getDirectionJudgmentIntervalMeter();
             int directionScoreThreshold = lineJudgmentConfig.getDirectionScoreThreshold();
 
             Point startPoint = new Point();
@@ -341,11 +356,13 @@ public class PilotingService {
                 lineInstance.directionNegative();
             } else {
                 //方向未计算出
+                log.debug("directionJudgment direction cal fail");
                 success = false;
             }
             log.info("directionJudgment direction={},startDirection={},endDirection={},startDistance={},endDistance={}", lineInstance.getDirection(), startDirection, endDirection, startDistance, endDistance);
         } else {
             //方向暂时无法计算
+            log.debug("directionJudgment direction cal queue min");
             success = false;
         }
         return success;
@@ -359,7 +376,7 @@ public class PilotingService {
      * @param scoreThreshold         得分有效大小
      * @return -1 反向，0 条件不足判断方向，1 正向
      */
-    private int directionWithReferencePoint(Point rp, int calculatePositionCount, int intervalMeter,
+    private int directionWithReferencePoint(Point rp, int calculatePositionCount, double intervalMeter,
                                             int scoreThreshold) {
         //方向算分
         int score = 0;
@@ -374,7 +391,7 @@ public class PilotingService {
                 //计算点与线路起点的距离
                 double distance = EarthMapUtil.distance(rp.getLatitude(), rp.getLongitude(), point.getLatitude(), point.getLongitude());
                 //间距大于指定距离，判定为有效，相对指定点越来越近为正向
-                log.info("directionWithReferencePoint pre={},distance={},score={}", pre, distance, score);
+                log.info("directionWithReferencePoint pre={},distance={},d={},score={}", pre, distance, distance - pre, score);
                 if (pre == 0) {
                     pre = distance;
                     continue;
@@ -388,6 +405,9 @@ public class PilotingService {
                 if (distance <= pre) score++;
                 //比上一个距离小 反向
                 if (distance > pre) score--;
+
+                pre = distance;
+
                 //score2
 //                    int score2 = 0;
 //                    double start = EarthMapUtil.distance(startStation.getLatitude(), startStation.getLongitude(), p.getLatitude(), p.getLongitude());
@@ -399,13 +419,15 @@ public class PilotingService {
 
         }
         //根据score计算方向
-        log.info("directionWithReferencePoint score={}", score);
+        log.info("directionWithReferencePoint score={},scoreThreshold={}", score, scoreThreshold);
         if (Math.abs(score) >= scoreThreshold) {
             if (score > 0) {
                 return 1;
             } else if (score < 0) {
                 return -1;
             }
+        } else {
+            log.info("directionWithReferencePoint fail scoreThreshold");
         }
         return 0;
     }
@@ -441,7 +463,7 @@ public class PilotingService {
         if (cameraList.isEmpty()) {
             log.info("pullNextCamera cameraList is empty");
         }
-        int pullCameraJudgmentIntervalMeter = lineJudgmentConfig.getPullCameraJudgmentIntervalMeter();
+        double pullCameraJudgmentIntervalMeter = lineJudgmentConfig.getPullCameraJudgmentIntervalMeter();
         int pullCameraJudgmentPositionCount = lineJudgmentConfig.getPullCameraJudgmentPositionCount();
         int pullCameraDirectionScoreThreshold = lineJudgmentConfig.getPullCameraDirectionScoreThreshold();
         //计算每一个摄像头的相对方向和距离，选取方向一致，距离最近的摄像头作为下一个

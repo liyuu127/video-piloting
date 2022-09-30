@@ -21,7 +21,7 @@ public class DirectionConf {
     /**
      * 开始移动时判断距离
      */
-    private int directionJudgmentIntervalMeter = 15;
+    private double directionJudgmentIntervalMeter = 1;
     /**
      * 开始方向计算得分，大于等于此值才判断分数有效
      */

@@ -36,7 +36,7 @@ public class AppRunner implements ApplicationRunner {
 //            log.info("RxtxServer start end");
 //        }).start();
 
-        new Thread(
+        Thread processTty = new Thread(
                 () -> {
                     File serport;
                     FileInputStream mSerR = null;
@@ -70,14 +70,16 @@ public class AppRunner implements ApplicationRunner {
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
-                        log.debug("listen data = {}", msg);
+//                        log.debug("listen data = {}", msg);
                         positionService.processMsg(msg);
                     }
 
                 }
-        ).start();
+        );
+        processTty.setName("ttyProcess");
+        processTty.start();
 
-//        new Thread(() -> {
+//        Thread test_process = new Thread(() -> {
 //            log.info("test position");
 //            //新秀
 //            Point xinxiu = new Point();
@@ -91,7 +93,9 @@ public class AppRunner implements ApplicationRunner {
 //
 //            positionTest.sendPoint(xinxiu, qianhaiwan, 0.0001, 0.0001, 1000);
 //        }
-//        ).start();
+//        );
+//        test_process.setName("test_process");
+//        test_process.start();
     }
 
 
