@@ -36,62 +36,62 @@ public class AppRunner implements ApplicationRunner {
 //            log.info("RxtxServer start end");
 //        }).start();
 
-//        new Thread(
-//                () -> {
-//                    File serport;
-//                    FileInputStream mSerR = null;
-//                    BufferedReader bufferedReader;
-//                    //获取连接
-//                    while (true) {
-//                        log.info("listen start {}", serialPortParam.getSerialPortName());
-//                        try {
-//                            serport = new File(serialPortParam.getSerialPortName());
-//                            mSerR = new FileInputStream(serport);
-//                            bufferedReader = new BufferedReader(new InputStreamReader(mSerR));
-//                            break;
-//                        } catch (FileNotFoundException e) {
-//                            log.error("listen error", e);
-//                            e.printStackTrace();
-//                            try {
-//                                Thread.sleep(1000 * 10);
-//                            } catch (InterruptedException ex) {
-//                                ex.printStackTrace();
-//                            }
-//                        }
-//                    }
-//
-//                    log.info("listen success {}", serialPortParam.getSerialPortName());
-//                    log.info("process start");
-//                    //开始处理
-//                    while (true) {
-//                        String msg = null;
-//                        try {
-//                            msg = bufferedReader.readLine();
-//                        } catch (IOException e) {
-//                            e.printStackTrace();
-//                        }
-//                        log.debug("listen data = {}", msg);
-//                        positionService.processMsg(msg);
-//                    }
-//
-//                }
-//        ).start();
+        new Thread(
+                () -> {
+                    File serport;
+                    FileInputStream mSerR = null;
+                    BufferedReader bufferedReader;
+                    //获取连接
+                    while (true) {
+                        log.info("listen start {}", serialPortParam.getSerialPortName());
+                        try {
+                            serport = new File(serialPortParam.getSerialPortName());
+                            mSerR = new FileInputStream(serport);
+                            bufferedReader = new BufferedReader(new InputStreamReader(mSerR));
+                            break;
+                        } catch (FileNotFoundException e) {
+                            log.error("listen error", e);
+                            e.printStackTrace();
+                            try {
+                                Thread.sleep(1000 * 10);
+                            } catch (InterruptedException ex) {
+                                ex.printStackTrace();
+                            }
+                        }
+                    }
 
-        new Thread(() -> {
-            log.info("test position");
-            //新秀
-            Point xinxiu = new Point();
-            xinxiu.setLongitude(114.149408);
-            xinxiu.setLatitude(22.547202);
+                    log.info("listen success {}", serialPortParam.getSerialPortName());
+                    log.info("process start");
+                    //开始处理
+                    while (true) {
+                        String msg = null;
+                        try {
+                            msg = bufferedReader.readLine();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        log.debug("listen data = {}", msg);
+                        positionService.processMsg(msg);
+                    }
 
-            //前海湾
-            Point qianhaiwan = new Point();
-            qianhaiwan.setLongitude(113.897924);
-            qianhaiwan.setLatitude(22.536818);
-
-            positionTest.sendPoint(xinxiu, qianhaiwan, 0.0001, 0.0001, 1000);
-        }
+                }
         ).start();
+
+//        new Thread(() -> {
+//            log.info("test position");
+//            //新秀
+//            Point xinxiu = new Point();
+//            xinxiu.setLongitude(114.149408);
+//            xinxiu.setLatitude(22.547202);
+//
+//            //前海湾
+//            Point qianhaiwan = new Point();
+//            qianhaiwan.setLongitude(113.897924);
+//            qianhaiwan.setLatitude(22.536818);
+//
+//            positionTest.sendPoint(xinxiu, qianhaiwan, 0.0001, 0.0001, 1000);
+//        }
+//        ).start();
     }
 
 
