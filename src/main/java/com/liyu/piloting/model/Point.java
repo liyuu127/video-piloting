@@ -2,6 +2,9 @@ package com.liyu.piloting.model;
 
 import lombok.Data;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 /**
  * @author liyu
  * date 2022/8/22 11:19
@@ -21,4 +24,5 @@ public class Point {
     private double speed;
 
     private long timestamp;
+    private LocalDateTime dataTime;
 }

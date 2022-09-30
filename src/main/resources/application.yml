@@ -6,29 +6,29 @@ piloting:
     baud-rate: 9600
   line:
     startStation:
-      longitude: 114.149408
-      latitude: 22.547202
+      longitude: 111.5227741
+      latitude: 21.5252517
       name: 新秀
     endStation:
-      longitude: 114.161008
-      latitude: 22.557502
+      longitude: 111.5265642
+      latitude: 21.5150798
       name: 前海湾
     cameraList:
-      - longitude: 114.157808
-        latitude: 22.555602
+      - longitude: 111.5258672
+        latitude: 21.5214423
         deviceSerial: K30567517
         name: 1号口
         url: https://open.ys7.com/v3/openlive/K30567517_1_1.m3u8?expire=1695464623&id=495299587758632960&t=e1d08a6212aaba07ff21e953df75b25c84cfcc954c3e724d7eab2e40b0c947ce&ev=100
   judgment:
     position:
-      position-expireTime: 2000 #过期期间间隔 ms
+      position-expireTime: 8000 #数据过期期间间隔 ms 默认8秒
       position-store-interval: 1000 #数据计算间隔 ms
       position-queueCapacity: 20 #位置队列容量
     direction:
-      direction-judgment-position-count: 4 #判断方向的位置的数量
-      direction-judgment-interval-meter: 14 #开始移动时判断距离
+      direction-judgment-position-count: 6 #判断方向的位置的数量
+      direction-judgment-interval-meter: 1.5 #开始移动时判断距离
       direction-score-threshold: 3 #开始方向计算得分，大于等于此值才判断分数有效
-      direction-calculate-interval: 60000 #多久间隔计算一次方向 默认一分钟
+      direction-calculate-interval: 5000 #多久间隔计算一次方向 默认一分钟
     start:
       lineStart-judgment-position-Count: 10 #判断开始的位置的数量
       start-judgment-interval-meter: 14 #开始移动时判断距离
@@ -38,11 +38,11 @@ piloting:
       line-end-satisfy-distance-count: 7 #到站有效位置数量
       line-end-satisfy-distance-meter: 100 #到站时站点距离
     camera:
-      pull-camera-judgment-position-count: 5 #判断拉取摄像头位置的数量
-      pull-camera-satisfy-distance-meter: 500 #拉取摄像头的符合距离的大小
+      pull-camera-judgment-position-count: 6 #判断拉取摄像头位置的数量
+      pull-camera-satisfy-distance-meter: 1000 #拉取摄像头的符合距离的大小
       pull-camera-satisfy-distance-count: 3 #拉取摄像头的符合距离的位置个数，必须低于采集的数量
-      pull-camera-judgment-interval-meter: 5 #拉取摄像头方向时判断距离
-      pull-camera-over-position-count: 5 #摄像头离开位置的数量
+      pull-camera-judgment-interval-meter: 1.5 #拉取摄像头方向时判断距离
+      pull-camera-over-position-count: 6 #摄像头离开位置的数量
       pull-camera-direction-score-threshold: 2 #拉取摄像头方向计算得分，大于等于此值才判断分数有效
       camera-over-satisfy-distance-meter: 100 #驶离多远算摄像头离站
       camera-over-satisfy-distance-count: 3 #摄像头离站效位置数量
@@ -51,8 +51,8 @@ piloting:
       line-stop-judgment-variance: 2 #停车位置数据的方差大小 小于等于此值算停车
       line-stop-judgment-time-interval: 5000 #停车位置计算时间间隔
   alarm:
-    search-time-forward-millis: 36000000 #查询时向时间（即告警过期时间）
-    search-time-millis-interval: 5000 #查询间隔时间
+    search-time-forward-millis: 300000 #查询时向时间（即告警过期时间）默认5分钟
+    search-time-millis-interval: 3000 #查询间隔时间 默认3s
     alarm-type: #告警类型，默认为-1（全部）
       - 10002
     status: 0 #告警消息状态：2-所有，1-已读，0-未读，默认为0（未读状态）

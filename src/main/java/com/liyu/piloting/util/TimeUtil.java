@@ -17,7 +17,7 @@ public class TimeUtil {
     final static DateTimeFormatter ddMMyyHHmmss = DateTimeFormatter.ofPattern("ddMMyyHHmmss");
     public static long parseGPRMCTime(String date, String time) {
         String dateTimeStr = date + time.substring(0, time.indexOf("."));
-        LocalDateTime dateTime = LocalDateTime.of(LocalDate.now(), LocalTime.parse(dateTimeStr, ddMMyyHHmmss));
+        LocalDateTime dateTime =  LocalDateTime.parse(dateTimeStr, ddMMyyHHmmss);
         return dateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
     }
 

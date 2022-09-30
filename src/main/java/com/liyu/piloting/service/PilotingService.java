@@ -117,10 +117,10 @@ public class PilotingService {
         int positionQueueCapacity = lineJudgmentConfig.getPositionQueueCapacity();
 
         //当前数据超过2s过期
-        if (now - point.getTimestamp() > positionExpireTime) {
-            log.debug("pointInQueue expire pre={},positionExpireTime={}", point.getTimestamp(), positionExpireTime);
-            return true;
-        }
+//        if (now - point.getTimestamp() > positionExpireTime) {
+//            log.debug("pointInQueue expire pre={},positionExpireTime={}", point.getTimestamp(), positionExpireTime);
+//            return true;
+//        }
 
         //距离上次数据更新是否超过1s
         if (now - this.updateQueueTimestamp < positionStoreInterval) {
@@ -157,7 +157,7 @@ public class PilotingService {
                 }
                 //计算距离是否满足条件拉取的距离条件，连续指定数量的位置在200m内
                 log.info("lineEndJudgment endStation?");
-                int satisfyDistanceCount = getSatisfyDistanceCountWithReferencePoint(referencePoint, lineEndJudgmentPositionCount, lineEndSatisfyDistanceMeter);
+                int satisfyDistanceCount = getSatisfyDistanceCountWithReferencePoint(referencePoint, lineEndJudgmentPositionCount, lineEndSatisfyDistanceMeter, false);
 
                 log.info("lineEndJudgment satisfyDistanceCount ={}", satisfyDistanceCount);
                 if (satisfyDistanceCount > lineEndSatisfyDistanceCount) {
@@ -211,7 +211,7 @@ public class PilotingService {
                 int pullCameraOverPositionCount = lineJudgmentConfig.getPullCameraOverPositionCount();
                 int cameraOverSatisfyDistanceCount = lineJudgmentConfig.getCameraOverSatisfyDistanceCount();
                 int cameraOverSatisfyDistanceMeter = lineJudgmentConfig.getCameraOverSatisfyDistanceMeter();
-                int satisfyDistanceCountWithReferencePoint = getSatisfyDistanceCountWithReferencePoint(referencePoint, pullCameraOverPositionCount, cameraOverSatisfyDistanceMeter);
+                int satisfyDistanceCountWithReferencePoint = getSatisfyDistanceCountWithReferencePoint(referencePoint, pullCameraOverPositionCount, cameraOverSatisfyDistanceMeter, false);
                 log.info("nowCameraOverJudgment satisfyDistanceCountWithReferencePoint={},cameraOverSatisfyDistanceCount={}", satisfyDistanceCountWithReferencePoint, cameraOverSatisfyDistanceCount);
                 //是否满足指定距离
                 if (satisfyDistanceCountWithReferencePoint >= cameraOverSatisfyDistanceCount) {
@@ -255,7 +255,7 @@ public class PilotingService {
             rp.setLatitude(next.getLatitude());
             rp.setLongitude(next.getLongitude());
             log.info("pullNextCamera camera distance?");
-            int satisfyDistanceCount = getSatisfyDistanceCountWithReferencePoint(rp, pullCameraJudgmentPositionCount, pullCameraSatisfyDistanceMeter);
+            int satisfyDistanceCount = getSatisfyDistanceCountWithReferencePoint(rp, pullCameraJudgmentPositionCount, pullCameraSatisfyDistanceMeter, true);
 
             //满足具体要求时拉取摄像头
             log.info("pullNextCamera satisfyDistanceCount={},pullCameraSatisfyDistanceCount={},camera={}", satisfyDistanceCount, pullCameraSatisfyDistanceCount, next.toString());
@@ -283,10 +283,11 @@ public class PilotingService {
      * @param referencePoint         参考点
      * @param calculatePositionCount 计算点数量
      * @param distanceThreshold      满足距离
+     * @param in                     在distanceThreshold中还是外，如离开应选择外
      * @return
      */
     private int getSatisfyDistanceCountWithReferencePoint(Point referencePoint, int calculatePositionCount,
-                                                          int distanceThreshold) {
+                                                          int distanceThreshold, boolean in) {
         //计算距离是否满足条件拉取的距离条件，连续指定数量的位置在1000m内
         int satisfyDistanceCount = 0;
 
@@ -298,9 +299,16 @@ public class PilotingService {
             if (i >= deque.size() - calculatePositionCount) {
                 double distance = EarthMapUtil.distance(referencePoint.getLatitude(), referencePoint.getLongitude(), point.getLatitude(), point.getLongitude());
                 log.info("getSatisfyDistanceCountWithReferencePoint distance={},distanceThreshold={}", distance, distanceThreshold);
-                if (distance <= distanceThreshold) {
-                    satisfyDistanceCount++;
+                if (in) {
+                    if (distance <= distanceThreshold) {
+                        satisfyDistanceCount++;
+                    }
+                } else {
+                    if (distance >= distanceThreshold) {
+                        satisfyDistanceCount++;
+                    }
                 }
+
             }
             i++;
         }
@@ -329,8 +337,8 @@ public class PilotingService {
             startPoint.setLongitude(lineInstance.getStartStation().getLongitude());
 
             Point endPoint = new Point();
-            startPoint.setLatitude(lineInstance.getStartStation().getLatitude());
-            startPoint.setLongitude(lineInstance.getStartStation().getLongitude());
+            endPoint.setLatitude(lineInstance.getEndStation().getLatitude());
+            endPoint.setLongitude(lineInstance.getEndStation().getLongitude());
 
             log.info("directionJudgment direction calculate");
             int startDirection = directionWithReferencePoint(startPoint, directionJudgmentPositionCount, directionJudgmentIntervalMeter, directionScoreThreshold);
@@ -399,6 +407,7 @@ public class PilotingService {
                 //是否距离之差大于满足的距离差
                 if (Math.abs(distance - pre) < intervalMeter) {
                     log.info("directionWithReferencePoint interval unSatisfy ,actual={},intervalMeter={}", Math.abs(distance - pre), intervalMeter);
+                    pre = distance;
                     continue;
                 }
                 //比上一个距离小 正向
@@ -474,6 +483,7 @@ public class PilotingService {
                 Point rp = new Point();
                 rp.setLatitude(camera.getLatitude());
                 rp.setLongitude(camera.getLongitude());
+                log.info("pullNextCamera direction ?");
                 int d = directionWithReferencePoint(rp, pullCameraJudgmentPositionCount, pullCameraJudgmentIntervalMeter, pullCameraDirectionScoreThreshold);
                 if (d > 0) {
                     return camera;
@@ -485,6 +495,7 @@ public class PilotingService {
                 Point rp = new Point();
                 rp.setLatitude(camera.getLatitude());
                 rp.setLongitude(camera.getLongitude());
+                log.info("pullNextCamera direction ?");
                 int d = directionWithReferencePoint(rp, pullCameraJudgmentPositionCount, pullCameraJudgmentIntervalMeter, pullCameraDirectionScoreThreshold);
                 if (d > 0) {
                     return camera;
