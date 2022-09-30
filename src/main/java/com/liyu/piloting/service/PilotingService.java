@@ -42,6 +42,9 @@ public class PilotingService {
     private Deque<Point> deque;
     private long updateQueueTimestamp = System.currentTimeMillis();
     private long endJudgmentTimestamp = System.currentTimeMillis();
+    /**
+     * 查询告警间隔
+     */
     private long searchAlarmTimestamp = System.currentTimeMillis();
 
 

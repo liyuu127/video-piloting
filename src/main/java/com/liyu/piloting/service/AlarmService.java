@@ -19,8 +19,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import static com.liyu.piloting.websocket.constant.WebSocketConstant.VIDEO_PILOTING_ALARM;
-import static com.liyu.piloting.websocket.constant.WebSocketConstant.VIDEO_PILOTING_CAMERA;
+import static com.liyu.piloting.websocket.constant.WebSocketConstant.*;
 
 /**
  * @author liyu
@@ -122,6 +121,11 @@ public class AlarmService {
             alarmDeviceList = getAlarmDeviceList(deviceSerial, alarmType, alarmConf.getStatus());
         }
         if (alarmDeviceList == null || alarmDeviceList.isEmpty()) {
+            //没有告警发送无告警消息
+            WebSocketMessage<Alarm> message = new WebSocketMessage<>();
+            message.setContent(null)
+                    .setMsgType(VIDEO_PILOTING_NO_ALARM);
+            WebSocketSender.pushMessageToAll(message);
             return;
         }
         alarmDeviceList.sort((a, b) -> (int) (b.getAlarmTime() - a.getAlarmTime()));

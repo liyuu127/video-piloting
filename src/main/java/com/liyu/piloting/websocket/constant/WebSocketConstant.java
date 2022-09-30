@@ -18,6 +18,7 @@ public class WebSocketConstant {
     public static final String VIDEO_PILOTING_CAMERA = "video_piloting_camera";
     public static final String VIDEO_PILOTING_CAMERA_OVER = "video_piloting_camera_over";
     public static final String VIDEO_PILOTING_ALARM = "video_piloting_alarm";
+    public static final String VIDEO_PILOTING_NO_ALARM = "video_piloting_no_alarm";
 
 
     /**
