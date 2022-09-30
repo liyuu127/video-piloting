@@ -382,6 +382,7 @@ public class PilotingService {
                 //是否距离之差大于满足的距离差
                 if (Math.abs(distance - pre) < intervalMeter) {
                     log.info("directionWithReferencePoint interval unSatisfy ,actual={},intervalMeter={}", Math.abs(distance - pre), intervalMeter);
+                    continue;
                 }
                 //比上一个距离小 正向
                 if (distance <= pre) score++;
