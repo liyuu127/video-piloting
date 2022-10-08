@@ -1,6 +1,7 @@
 package com.liyu.piloting.service;
 
 import com.liyu.piloting.model.Point;
+import com.liyu.piloting.util.NMEA0183Util;
 import com.liyu.piloting.util.TimeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -39,8 +40,8 @@ public class PositionService {
                 log.error("msg null");
                 log.debug("processMsg $GPRM time={},latitude={},longitude={},speed={},date={}", time, latitude, longitude, speed, date);
             }
-            point.setLongitude(Double.parseDouble(longitude) / 100);
-            point.setLatitude(Double.parseDouble(latitude) / 100);
+            point.setLongitude(NMEA0183Util.convertLonDegree(longitude));
+            point.setLatitude(NMEA0183Util.convertLaDegree(latitude));
             point.setSpeed(Double.parseDouble(speed));
             point.setTimestamp(TimeUtil.parseGPRMCTime(date, time));
             log.debug("processMsg $GPRM point={}", point.toString());

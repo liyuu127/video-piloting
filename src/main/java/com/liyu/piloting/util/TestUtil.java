@@ -21,8 +21,8 @@ public class TestUtil {
             log.error("msg null");
             log.debug("processMsg $GPRM time={},latitude={},longitude={},speed={},date={}", time, latitude, longitude, speed, date);
         }
-        point.setLongitude(Double.parseDouble(longitude) / 100);
-        point.setLatitude(Double.parseDouble(latitude) / 100);
+        point.setLongitude(NMEA0183Util.convertLonDegree(longitude));
+        point.setLatitude(NMEA0183Util.convertLaDegree(latitude));
         point.setSpeed(Double.parseDouble(speed));
         point.setTimestamp(TimeUtil.parseGPRMCTime(date, time));
         point.setDataTime(LocalDateTime.ofEpochSecond(point.getTimestamp() / 1000, 0, ZoneOffset.of("+8")));

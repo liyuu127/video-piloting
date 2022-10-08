@@ -213,27 +213,35 @@ public class LineTest {
     }
 
 
-
     @Test
     public void test_distance() {
 
-        Point p1 = new Point();
+    Point p1 = new Point();
         p1.setLatitude(21.5252517);
         p1.setLongitude(111.5227741);
 
-        Point p2 = new Point();
+    Point p2 = new Point();
         p2.setLatitude(21.5214423);
         p2.setLongitude(111.5258672);
 
-        Point p3 = new Point();
+    Point p3 = new Point();
         p3.setLatitude(21.5150798);
         p3.setLongitude(111.5265642);
 
-        Double d1 = TestUtil.getDistance(p1, p2);
-        Double d2 = TestUtil.getDistance(p2, p3);
-        Double d3 = TestUtil.getDistance(p1, p3);
-        log.info("d1={},d2={},d3={}", d1, d2, d3);
-    }
+    Point p4 = new Point();
+        p4.setLatitude(21.4300256);
+        p4.setLongitude(111.4963504);
+
+    Double d1 = TestUtil.getDistance(p1, p2);
+    Double d2 = TestUtil.getDistance(p2, p3);
+    Double d3 = TestUtil.getDistance(p1, p3);
+    //        log.info("d1={},d2={},d3={}", d1, d2, d3);
+    Double d14 = TestUtil.getDistance(p1, p4);
+    Double d24 = TestUtil.getDistance(p2, p4);
+    Double d34 = TestUtil.getDistance(p3, p4);
+        log.info("d14={},d24={},d34={}",d14,d24,d34);
+
+}
 
 }
 

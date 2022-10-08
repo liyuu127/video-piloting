@@ -6,16 +6,16 @@ piloting:
     baud-rate: 9600
   line:
     startStation:
-      longitude: 111.5227741
-      latitude: 21.5252517
+      longitude: 111.8712902
+      latitude: 21.8754195
       name: 新秀
     endStation:
-      longitude: 111.5265642
-      latitude: 21.5150798
+      longitude: 111.877607
+      latitude: 21.858466
       name: 前海湾
     cameraList:
-      - longitude: 111.5258672
-        latitude: 21.5214423
+      - longitude: 111.876445
+        latitude: 21.8690705
         deviceSerial: K30567517
         name: 1号口
         url: https://open.ys7.com/v3/openlive/K30567517_1_1.m3u8?expire=1695464623&id=495299587758632960&t=e1d08a6212aaba07ff21e953df75b25c84cfcc954c3e724d7eab2e40b0c947ce&ev=100
