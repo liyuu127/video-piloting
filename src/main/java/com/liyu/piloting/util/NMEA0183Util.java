@@ -10,34 +10,36 @@ public class NMEA0183Util {
 
     public static double convertLaDegree(String la) {
 
-        String las = la.replace(".", "").substring(2);
+        String las = la.substring(2);
         int i = 0;
         while (i < las.length() && las.charAt(i) == '0') {
             i++;
         }
+        las = las.replace(".", "");
         String s = String.valueOf(Double.parseDouble(las) / 60);
         s = s.replace(".", "");
-        String s1 = String.valueOf((int) (Double.parseDouble(la) / 100)) + "." + las.substring(0, i) + s;
+        String s1 = (int) (Double.parseDouble(la) / 100) + "." + las.substring(0, i) + s;
         return Double.parseDouble(s1);
     }
 
     public static double convertLonDegree(String la) {
 
-        String las = la.replace(".", "").substring(3);
+        String las = la.substring(3);
         int i = 0;
         while (i < las.length() && las.charAt(i) == '0') {
             i++;
         }
+        las = las.replace(".", "");
         String s = String.valueOf(Double.parseDouble(las) / 60);
         s = s.replace(".", "");
-        String s1 = String.valueOf((int) (Double.parseDouble(la) / 100)) + "." + las.substring(0, i) + s;
+        String s1 = (int) (Double.parseDouble(la) / 100) + "." + las.substring(0, i) + s;
         return Double.parseDouble(s1);
     }
 
     public static void main(String[] args) {
-        double v = convertLaDegree("2152.52517");
+        double v = convertLaDegree("2238.5260");
         System.out.println("v = " + v);
-        double v1 = convertLonDegree("11152.27741");
+        double v1 = convertLonDegree("11401.9686");
         System.out.println("v1 = " + v1);
     }
 }
