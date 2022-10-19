@@ -57,7 +57,8 @@ piloting:
       - 10002
     status: 0 #告警消息状态：2-所有，1-已读，0-未读，默认为0（未读状态）
   run:
-    serial: true
+    netty: true
+    serial: false
     log: false
     generate: false
 log:

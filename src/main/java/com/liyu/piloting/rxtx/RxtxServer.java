@@ -1,5 +1,6 @@
 package com.liyu.piloting.rxtx;
 
+import gnu.io.CommPortIdentifier;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -10,12 +11,16 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.oio.OioEventLoopGroup;
 import io.netty.channel.rxtx.RxtxChannel;
 import io.netty.channel.rxtx.RxtxDeviceAddress;
+import io.netty.handler.codec.LineBasedFrameDecoder;
+import io.netty.handler.codec.string.StringDecoder;
+import io.netty.handler.codec.string.StringEncoder;
 import io.netty.util.concurrent.GenericFutureListener;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 
@@ -33,7 +38,8 @@ public class RxtxServer {
     @Autowired
     private SerialPortParam serialPortParam;
 
-    private RxtxHandler handler = new RxtxHandler();
+    @Autowired
+    private RxtxHandler handler;
 
     public void createRxtx() throws Exception {
         // 串口使用阻塞io
@@ -53,19 +59,13 @@ public class RxtxServer {
                     .handler(new ChannelInitializer<RxtxChannel>() {
                         @Override
                         protected void initChannel(RxtxChannel rxtxChannel) {
-                            rxtxChannel.pipeline().addLast(
-//                                    new LineBasedFrameDecoder(60000),
-                                    // 文本形式发送编解码
-//                                    new StringEncoder(StandardCharsets.UTF_8),
-//                                    new StringDecoder(StandardCharsets.UTF_8),
-                                    // 十六进制形式发送编解码
-                                    new ByteArrayDecoder(),
-                                    new ByteArrayEncoder(),
-                                    handler
-                            );
+                            rxtxChannel.pipeline()
+                                    .addLast(new LineBasedFrameDecoder(1024))
+                                    .addLast(new StringDecoder(StandardCharsets.UTF_8))
+                                    .addLast(handler);
                         }
                     });
-
+            System.setProperty("gnu.io.rxtx.SerialPorts", serialPortParam.getSerialPortName());
             ChannelFuture f = bootstrap.connect(new RxtxDeviceAddress(serialPortParam.getSerialPortName())).sync();
             f.addListener(connectedListener);
 

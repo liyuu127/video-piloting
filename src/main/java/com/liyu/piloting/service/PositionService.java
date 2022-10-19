@@ -28,6 +28,7 @@ public class PositionService {
 
     public void processMsg(String msg) {
 
+        log.debug("msg={}",msg);
         if (msg.startsWith("$GPRM")) {
             Point point = new Point();
             String[] split = msg.split(",");

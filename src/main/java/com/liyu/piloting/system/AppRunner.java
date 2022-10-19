@@ -1,6 +1,7 @@
 package com.liyu.piloting.system;
 
 import com.liyu.piloting.model.Point;
+import com.liyu.piloting.rxtx.RxtxServer;
 import com.liyu.piloting.rxtx.SerialPortParam;
 import com.liyu.piloting.service.PilotingService;
 import com.liyu.piloting.service.PositionService;
@@ -26,8 +27,8 @@ import java.time.format.DateTimeFormatter;
 @Component
 @Slf4j
 public class AppRunner implements ApplicationRunner {
-//    @Autowired
-//    private RxtxServer rxtxServer;
+    @Autowired
+    private RxtxServer rxtxServer;
 
     @Autowired
     private PositionService positionService;
@@ -40,6 +41,8 @@ public class AppRunner implements ApplicationRunner {
 
     @Value("${piloting.run.serial}")
     private boolean runFromSerial;
+    @Value("${piloting.run.netty}")
+    private boolean runFromNetty;
     @Value("${piloting.run.generate}")
     private boolean runFromGenerate;
     @Value("${piloting.run.log}")
@@ -53,6 +56,9 @@ public class AppRunner implements ApplicationRunner {
             runFromSerial();
         }
 
+        if (runFromNetty) {
+            runFromNetty();
+        }
         //生成数据模拟
         if (runFromGenerate) {
             runFromGenerate();
@@ -63,6 +69,15 @@ public class AppRunner implements ApplicationRunner {
             runFromLogFile();
         }
 
+    }
+
+    private void runFromNetty() {
+        Thread thread = new Thread(() -> {
+            log.info("netty start");
+            rxtxServer.start();
+            log.info("netty exit");
+        });
+        SystemThreadPool.doExecute(thread);
     }
 
     private void runFromGenerate() {
@@ -89,19 +104,18 @@ public class AppRunner implements ApplicationRunner {
         Thread processTty = new Thread(
                 () -> {
                     File serport;
-                    FileInputStream mSerR = null;
-                    BufferedReader bufferedReader;
+                    BufferedReader bufferedReader = null;
                     //获取连接
                     while (true) {
                         log.info("listen start {}", serialPortParam.getSerialPortName());
                         try {
                             serport = new File(serialPortParam.getSerialPortName());
-                            mSerR = new FileInputStream(serport);
-                            bufferedReader = new BufferedReader(new InputStreamReader(mSerR));
+                            bufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(serport)));
                             break;
                         } catch (FileNotFoundException e) {
-                            log.error("listen error", e);
                             e.printStackTrace();
+                            log.error("listen error", e);
+
                             try {
                                 Thread.sleep(1000 * 10);
                             } catch (InterruptedException ex) {
@@ -123,10 +137,10 @@ public class AppRunner implements ApplicationRunner {
                             }
                         } catch (IOException e) {
                             e.printStackTrace();
+                            log.error("read error", e);
                         }
                         positionService.processMsg(msg);
                     }
-
                 }
         );
         processTty.setName("ttyProcess");
