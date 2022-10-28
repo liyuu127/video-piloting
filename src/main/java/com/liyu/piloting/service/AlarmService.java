@@ -237,6 +237,10 @@ public class AlarmService {
             log.info("sendNoAlarm alarm not expire lastAlarmTimestamp={},interval={}", lastAlarmTimestamp, alarmConf.getNoalarmInterval());
             return;
         }
+        if (interval && lastAlarmType + alarmConf.getNoalarmInterval() > System.currentTimeMillis()) {
+            log.info("sendNoAlarm alarm not expire lastAlarmType={},interval={}", lastAlarmType, alarmConf.getNoalarmInterval());
+            return;
+        }
         WebSocketMessage<Alarm> message = new WebSocketMessage<>();
         message.setContent(null)
                 .setMsgType(VIDEO_PILOTING_NO_ALARM);
