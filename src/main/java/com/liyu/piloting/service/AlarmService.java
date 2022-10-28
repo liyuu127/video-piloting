@@ -222,7 +222,7 @@ public class AlarmService {
                                 .setMsgType(VIDEO_PILOTING_ALARM);
                         WebSocketSender.pushMessageToAll(message);
                         lastAlarmTimestamp = System.currentTimeMillis();
-                        lastAlarmType=dwAlarmType;
+                        lastAlarmType = dwAlarmType;
                         log.info("alarmDataHandle send alarm={}", struAlarmInfo);
                     }
                 }
@@ -237,7 +237,7 @@ public class AlarmService {
             log.info("sendNoAlarm alarm not expire lastAlarmTimestamp={},interval={}", lastAlarmTimestamp, alarmConf.getNoalarmInterval());
             return;
         }
-        if (interval && lastAlarmType + alarmConf.getNoalarmInterval() > System.currentTimeMillis()) {
+        if (interval && lastAlarmTimestamp + alarmConf.getNoalarmInterval() > System.currentTimeMillis()) {
             log.info("sendNoAlarm alarm not expire lastAlarmType={},interval={}", lastAlarmType, alarmConf.getNoalarmInterval());
             return;
         }

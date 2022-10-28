@@ -32,7 +32,7 @@ piloting:
       position-store-interval: 1000 #数据计算间隔 ms
       position-queueCapacity: 20 #位置队列容量
     direction:
-      enable: true #是否计算方向
+      enable: false #是否计算方向
       direction-judgment-position-count: 6 #判断方向的位置的数量
       direction-judgment-interval-meter: 1.5 #开始移动时判断距离
       direction-score-threshold: 3 #开始方向计算得分，大于等于此值才判断分数有效
@@ -63,7 +63,7 @@ piloting:
     search-time-forward-millis: 5000 #查询时向时间（即告警过期时间）默认5s
     search-time-millis-interval: 3000 #查询间隔时间 默认3s
     alarm-interval: 5000 #间隔时间 默认2s 2秒内只告警一次（用于主动监听）
-    noalarm-interval: 5000 #无告警间隔时间
+    noalarm-interval: 7000 #无告警间隔时间
     alarm-type: #告警类型，默认为-1（全部）
       - 10002
     dwAlarmType: #移动侦测、视频丢失、遮挡、IO信号量等报警信息(V3.0以上版本支持的设备)
