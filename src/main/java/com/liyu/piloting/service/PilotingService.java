@@ -37,8 +37,9 @@ public class PilotingService {
     AlarmService alarmService;
     @Autowired
     AlarmConf alarmConf;
+    @Autowired
+    LineService lineService;
 
-    private LineInstance lineInstance;
     private Deque<Point> deque;
     private long updateQueueTimestamp = System.currentTimeMillis();
     private long endJudgmentTimestamp = System.currentTimeMillis();
@@ -50,7 +51,6 @@ public class PilotingService {
 
     @PostConstruct
     public void init() {
-        this.lineInstance = lineConfig.lineInstance();
         this.deque = new ArrayDeque<>(lineJudgmentConfig.getPositionQueueCapacity());
     }
 
@@ -100,10 +100,10 @@ public class PilotingService {
             Variance variance = new Variance();
             double[] distance = new double[judgmentPositionCount];
             StationPosition stationPosition;
-            if (lineInstance.directionIsPositive()) {
-                stationPosition = lineInstance.getEndStation();
+            if (getLineInstance().directionIsPositive()) {
+                stationPosition = getLineInstance().getEndStation();
             } else {
-                stationPosition = lineInstance.getStartStation();
+                stationPosition = getLineInstance().getStartStation();
             }
             int i = 0, j = 0;
             Iterator<Point> pointIterator = deque.iterator();
@@ -121,7 +121,7 @@ public class PilotingService {
             log.info("lineStopJudgment evaluate={},varianceNum={}", evaluate, varianceNum);
             if (evaluate <= varianceNum) {
                 log.info("lineStopJudgment stop and init");
-                lineInstance = null;
+                lineService.setLineInstance(null);
                 deque = null;
             }
         }
@@ -172,8 +172,8 @@ public class PilotingService {
 
     private void lineEndJudgment() {
         //摄像头是否拉取结束
-        long unPulCount = lineInstance.getCameraList().stream().filter(Camera::statusIsUnPull).count();
-        long pulledCount = lineInstance.getCameraList().stream().filter(Camera::statusIsPull).count();
+        long unPulCount = getLineInstance().getCameraList().stream().filter(Camera::statusIsUnPull).count();
+        long pulledCount = getLineInstance().getCameraList().stream().filter(Camera::statusIsPull).count();
         if (unPulCount == 0 && pulledCount == 0) {
             int lineEndJudgmentPositionCount = lineJudgmentConfig.getLineEndJudgmentPositionCount();
             if (deque.size() >= lineEndJudgmentPositionCount) {
@@ -181,12 +181,12 @@ public class PilotingService {
                 int lineEndSatisfyDistanceCount = lineJudgmentConfig.LineEndSatisfyDistanceCount();
 
                 Point referencePoint = new Point();
-                if (lineInstance.directionIsPositive()) {
-                    referencePoint.setLatitude(lineInstance.getEndStation().getLatitude());
-                    referencePoint.setLongitude(lineInstance.getEndStation().getLongitude());
+                if (getLineInstance().directionIsPositive()) {
+                    referencePoint.setLatitude(getLineInstance().getEndStation().getLatitude());
+                    referencePoint.setLongitude(getLineInstance().getEndStation().getLongitude());
                 } else {
-                    referencePoint.setLatitude(lineInstance.getStartStation().getLatitude());
-                    referencePoint.setLongitude(lineInstance.getStartStation().getLongitude());
+                    referencePoint.setLatitude(getLineInstance().getStartStation().getLatitude());
+                    referencePoint.setLongitude(getLineInstance().getStartStation().getLongitude());
                 }
                 //计算距离是否满足条件拉取的距离条件，连续指定数量的位置在200m内
                 log.info("lineEndJudgment endStation?");
@@ -222,16 +222,22 @@ public class PilotingService {
      * 判断当前摄像头是否结束
      */
     private void nowCameraOverJudgment() {
-        Camera nowCamera = lineInstance.getNowCamera();
+        Camera nowCamera = getLineInstance().getNowCamera();
         if (nowCamera != null) {
             //拉取告警
-            Long alarmInterval = alarmConf.getSearchTimeMillisInterval();
-            if (System.currentTimeMillis() > alarmInterval + searchAlarmTimestamp) {
-                alarmService.processAlarm(nowCamera.getDeviceSerial());
-                searchAlarmTimestamp = System.currentTimeMillis();
-            } else {
-                log.debug("search alarm pre={},alarmInterval={}", searchAlarmTimestamp, alarmInterval);
+            if (alarmConf.getModel() == AlarmModelEnum.HK.getModel()) {
+                //直接发一个无告警报文
+                alarmService.sendNoAlarm(true);
+            } else if (alarmConf.getModel() == AlarmModelEnum.YS7.getModel()) {
+                Long alarmInterval = alarmConf.getSearchTimeMillisInterval();
+                if (System.currentTimeMillis() > alarmInterval + searchAlarmTimestamp) {
+                    alarmService.processAlarm(nowCamera.getDeviceSerial());
+                    searchAlarmTimestamp = System.currentTimeMillis();
+                } else {
+                    log.debug("search alarm pre={},alarmInterval={}", searchAlarmTimestamp, alarmInterval);
+                }
             }
+
 
             boolean over = judgmentCameraOver(nowCamera);
             if (over) {
@@ -242,8 +248,8 @@ public class PilotingService {
                 WebSocketSender.pushMessageToAll(message);
                 log.info("nowCameraOverJudgment  websocket camera over ={}", nowCamera.toString());
 
-                lineInstance.setLastCamera(nowCamera);
-                lineInstance.setNowCamera(null);
+                getLineInstance().setLastCamera(nowCamera);
+                getLineInstance().setNowCamera(null);
             }
 
         }
@@ -324,7 +330,7 @@ public class PilotingService {
     }
 
     private void pullNextCamera() {
-        if (lineInstance.getNowCamera() != null) {
+        if (getLineInstance().getNowCamera() != null) {
             //当前还有摄像头 暂时不拉取新的
             return;
         }
@@ -346,11 +352,18 @@ public class PilotingService {
                 .setMsgType(VIDEO_PILOTING_CAMERA);
         WebSocketSender.pushMessageToAll(message);
         log.info("pullNextCamera websocket pull new camera ={}", next);
-        //查询一次告警
-        alarmService.processAlarm(next.getDeviceSerial());
-        searchAlarmTimestamp = System.currentTimeMillis();
-        lineInstance.setNowCamera(next);
-        lineInstance.setNextCamera(null);
+
+        if (alarmConf.getModel() == AlarmModelEnum.HK.getModel()) {
+            //直接发一个无告警报文
+            alarmService.sendNoAlarm(true);
+        } else if (alarmConf.getModel() == AlarmModelEnum.YS7.getModel()) {
+            //查询一次告警
+            alarmService.processAlarm(next.getDeviceSerial());
+            searchAlarmTimestamp = System.currentTimeMillis();
+        }
+
+        getLineInstance().setNowCamera(next);
+        getLineInstance().setNextCamera(null);
 
     }
 
@@ -362,8 +375,8 @@ public class PilotingService {
     public Camera pullNextCameraWithDirection() {
         Camera next = null;
         //上次是否计算过 上次计算过就不要计算
-        if (lineInstance.getNextCamera() != null) {
-            next = lineInstance.getNextCamera();
+        if (getLineInstance().getNextCamera() != null) {
+            next = getLineInstance().getNextCamera();
         }
         //计算下一个摄像头
         if (next == null) {
@@ -390,7 +403,7 @@ public class PilotingService {
      */
     public Camera pullNextCameraWithDistance() {
 
-        List<Camera> cameraList = lineInstance.getCameraList();
+        List<Camera> cameraList = getLineInstance().getCameraList();
         double min = Double.MAX_VALUE;
         Camera next = null;
         for (Camera camera : cameraList) {
@@ -492,12 +505,12 @@ public class PilotingService {
             int directionScoreThreshold = lineJudgmentConfig.getDirectionScoreThreshold();
 
             Point startPoint = new Point();
-            startPoint.setLatitude(lineInstance.getStartStation().getLatitude());
-            startPoint.setLongitude(lineInstance.getStartStation().getLongitude());
+            startPoint.setLatitude(getLineInstance().getStartStation().getLatitude());
+            startPoint.setLongitude(getLineInstance().getStartStation().getLongitude());
 
             Point endPoint = new Point();
-            endPoint.setLatitude(lineInstance.getEndStation().getLatitude());
-            endPoint.setLongitude(lineInstance.getEndStation().getLongitude());
+            endPoint.setLatitude(getLineInstance().getEndStation().getLatitude());
+            endPoint.setLongitude(getLineInstance().getEndStation().getLongitude());
 
             log.info("directionJudgment direction calculate");
             int startDirection = directionWithReferencePoint(startPoint, directionJudgmentPositionCount, directionJudgmentIntervalMeter, directionScoreThreshold);
@@ -507,26 +520,26 @@ public class PilotingService {
 
             if (startDirection > 0 && endDirection > 0) {
                 if (startDistance < endDistance) {
-                    lineInstance.directionPositive();
+                    getLineInstance().directionPositive();
                 } else {
-                    lineInstance.directionNegative();
+                    getLineInstance().directionNegative();
                 }
             } else if (startDirection < 0 && endDirection < 0) {
                 if (startDistance > endDistance) {
-                    lineInstance.directionPositive();
+                    getLineInstance().directionPositive();
                 } else {
-                    lineInstance.directionNegative();
+                    getLineInstance().directionNegative();
                 }
             } else if (startDirection < 0 && endDirection > 0) {
-                lineInstance.directionPositive();
+                getLineInstance().directionPositive();
             } else if (startDirection > 0 && endDirection < 0) {
-                lineInstance.directionNegative();
+                getLineInstance().directionNegative();
             } else {
                 //方向未计算出
                 log.debug("directionJudgment direction cal fail");
                 success = false;
             }
-            log.info("directionJudgment direction={},startDirection={},endDirection={},startDistance={},endDistance={}", lineInstance.getDirection(), startDirection, endDirection, startDistance, endDistance);
+            log.info("directionJudgment direction={},startDirection={},endDirection={},startDistance={},endDistance={}", getLineInstance().getDirection(), startDirection, endDirection, startDistance, endDistance);
         } else {
             //方向暂时无法计算
             log.debug("directionJudgment direction cal queue min");
@@ -541,11 +554,11 @@ public class PilotingService {
      * @return boolean true 有效的，false 无效的
      */
     private boolean validDirection() {
-        if (lineInstance.getDirection() != null && lineInstance.getDirectionTimestamp() != null) {
+        if (getLineInstance().getDirection() != null && getLineInstance().getDirectionTimestamp() != null) {
             long interval = lineJudgmentConfig.getDirectionCalculateInterval();
             //方向还未失效
-            if (System.currentTimeMillis() <= interval + lineInstance.getDirectionTimestamp()) {
-                log.debug("directionJudgment not expire pre={},interval={}", lineInstance.getDirectionTimestamp(), interval);
+            if (System.currentTimeMillis() <= interval + getLineInstance().getDirectionTimestamp()) {
+                log.debug("directionJudgment not expire pre={},interval={}", getLineInstance().getDirectionTimestamp(), interval);
                 return true;
             }
         }
@@ -649,7 +662,7 @@ public class PilotingService {
      */
     private Camera getNextCameraWithDirection() {
         //获取下一个摄像头
-        List<Camera> cameraList = lineInstance.getCameraList();
+        List<Camera> cameraList = getLineInstance().getCameraList();
         if (cameraList.isEmpty()) {
             log.info("getNextCameraWithDirection cameraList is empty");
         }
@@ -658,7 +671,7 @@ public class PilotingService {
         int pullCameraDirectionScoreThreshold = lineJudgmentConfig.getPullCameraDirectionScoreThreshold();
         //计算每一个摄像头的相对方向和距离，选取方向一致，距离最近的摄像头作为下一个
         //根据方向获取第一个未拉取的摄像头
-        if (lineInstance.directionIsPositive()) {
+        if (getLineInstance().directionIsPositive()) {
             for (int i = 0; i < cameraList.size(); i++) {
                 Camera camera = cameraList.get(i);
                 Point rp = new Point();
@@ -684,5 +697,9 @@ public class PilotingService {
             }
         }
         return null;
+    }
+
+    private LineInstance getLineInstance() {
+        return lineService.getLineInstance();
     }
 }

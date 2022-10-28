@@ -1,11 +1,12 @@
 package com.liyu.piloting.service;
 
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.liyu.piloting.HKAlarm.NetSDKDemo.HCNetSDK;
 import com.liyu.piloting.config.AlarmConf;
 import com.liyu.piloting.model.*;
 import com.liyu.piloting.websocket.model.WebSocketMessage;
 import com.liyu.piloting.websocket.util.WebSocketSender;
+import com.sun.jna.Pointer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,10 +17,10 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
-import static com.liyu.piloting.websocket.constant.WebSocketConstant.*;
+import static com.liyu.piloting.websocket.constant.WebSocketConstant.VIDEO_PILOTING_ALARM;
+import static com.liyu.piloting.websocket.constant.WebSocketConstant.VIDEO_PILOTING_NO_ALARM;
 
 /**
  * @author liyu
@@ -31,10 +32,17 @@ import static com.liyu.piloting.websocket.constant.WebSocketConstant.*;
 public class AlarmService {
     @Autowired
     RestTemplate restTemplate;
-
+    @Autowired
+    LineService lineService;
     @Autowired
     AlarmConf alarmConf;
 
+    /**
+     * 查询告警间隔
+     */
+    private long lastAlarmTimestamp = System.currentTimeMillis();
+    private long lastNoAlarmTimestamp = System.currentTimeMillis();
+    private int lastAlarmType = -1;
 
     private static final String AppKey = "9bf4cdbcf95f428f91bc22fc568197c0";
     private static final String Secret = "664382388b3f6a2ea625d3d31d27e53a";
@@ -122,10 +130,7 @@ public class AlarmService {
         }
         if (alarmDeviceList == null || alarmDeviceList.isEmpty()) {
             //没有告警发送无告警消息
-            WebSocketMessage<Alarm> message = new WebSocketMessage<>();
-            message.setContent(null)
-                    .setMsgType(VIDEO_PILOTING_NO_ALARM);
-            WebSocketSender.pushMessageToAll(message);
+            sendNoAlarm(false);
             return;
         }
         alarmDeviceList.sort((a, b) -> (int) (b.getAlarmTime() - a.getAlarmTime()));
@@ -179,5 +184,64 @@ public class AlarmService {
             log.info("accessToken success");
         }
         return accessToken.getAccessToken();
+    }
+
+
+    public void alarmDataHandle(int lCommand, HCNetSDK.NET_DVR_ALARMER pAlarmer, Pointer pAlarmInfo, int dwBufLen, Pointer pUser) {
+        log.info("alarmDataHandle alarm event type:lCommand:" + Integer.toHexString(lCommand));
+        String sTime;
+        String MonitoringSiteID;
+        //lCommand是传的报警类型
+        switch (lCommand) {
+            case HCNetSDK.COMM_ALARM_V30:  //移动侦测、视频丢失、遮挡、IO信号量等报警信息(V3.0以上版本支持的设备)
+                HCNetSDK.NET_DVR_ALARMINFO_V30 struAlarmInfo = new HCNetSDK.NET_DVR_ALARMINFO_V30();
+                struAlarmInfo.write();
+                Pointer pAlarmInfo_V30 = struAlarmInfo.getPointer();
+                pAlarmInfo_V30.write(0, pAlarmInfo.getByteArray(0, struAlarmInfo.size()), 0, struAlarmInfo.size());
+                struAlarmInfo.read();
+                log.info("alarmDataHandle alarm event type:dwAlarmType:" + struAlarmInfo.dwAlarmType);
+                String sSerialNumber = new String(pAlarmer.sSerialNumber);
+                Camera nowCamera = lineService.getLineInstance().getNowCamera();
+                if (nowCamera == null) {
+                    log.info("alarmDataHandle alarm NowCamera is null");
+                    return;
+                }
+                if (!StringUtils.equals(sSerialNumber, nowCamera.getSSerialNumber())) {
+                    log.info("alarmDataHandle alarm alarmCamera={}, NowCamera ={} ", sSerialNumber, nowCamera.getSSerialNumber());
+
+                }
+                for (Integer dwAlarmType : alarmConf.getDwAlarmType()) {
+                    if (struAlarmInfo.dwAlarmType == dwAlarmType) {
+                        if (lastAlarmTimestamp + alarmConf.getAlarmInterval() > System.currentTimeMillis() && lastAlarmType == dwAlarmType) {
+                            log.info("alarmDataHandle alarm not expire lastAlarmTimestamp={},interval={},lastAlarmType={}", lastAlarmTimestamp, alarmConf.getAlarmInterval(), lastAlarmType);
+                            return;
+                        }
+
+                        WebSocketMessage<HCNetSDK.NET_DVR_ALARMINFO_V30> message = new WebSocketMessage<>();
+                        message.setContent(struAlarmInfo)
+                                .setMsgType(VIDEO_PILOTING_ALARM);
+                        WebSocketSender.pushMessageToAll(message);
+                        lastAlarmTimestamp = System.currentTimeMillis();
+                        lastAlarmType=dwAlarmType;
+                        log.info("alarmDataHandle send alarm={}", struAlarmInfo);
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    public void sendNoAlarm(boolean interval) {
+        if (interval && lastNoAlarmTimestamp + alarmConf.getNoalarmInterval() > System.currentTimeMillis()) {
+            log.info("sendNoAlarm alarm not expire lastAlarmTimestamp={},interval={}", lastAlarmTimestamp, alarmConf.getNoalarmInterval());
+            return;
+        }
+        WebSocketMessage<Alarm> message = new WebSocketMessage<>();
+        message.setContent(null)
+                .setMsgType(VIDEO_PILOTING_NO_ALARM);
+        WebSocketSender.pushMessageToAll(message);
+        lastNoAlarmTimestamp = System.currentTimeMillis();
+        log.info("sendNoAlarm message={}", message);
     }
 }

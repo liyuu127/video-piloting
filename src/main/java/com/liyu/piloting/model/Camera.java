@@ -36,6 +36,15 @@ public class Camera implements Cloneable {
      */
     @Deprecated
     private Integer status = 1;
+    //用于连接
+    private int id;
+    private String ip;
+    private short port;
+    private String user;
+    private String psw;
+    private String sSerialNumber;
+
+
 
     public void statusUnPull() {
         this.status = STATUS_UN_PULL;
@@ -66,7 +75,7 @@ public class Camera implements Cloneable {
         try {
             return (Camera) super.clone();
         } catch (CloneNotSupportedException e) {
-            return new Camera(this.longitude, this.latitude, this.name, this.url, this.deviceSerial, this.status);
+            return new Camera(this.longitude, this.latitude, this.name, this.url, this.deviceSerial, this.status, this.id,this.ip, this.port, this.user, this.psw,this.sSerialNumber);
         }
     }
 }

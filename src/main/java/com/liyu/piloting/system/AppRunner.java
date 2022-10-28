@@ -1,5 +1,10 @@
 package com.liyu.piloting.system;
 
+import com.liyu.piloting.HKAlarm.NetSDKDemo.FMSGCallBack_V31;
+import com.liyu.piloting.HKAlarm.alarm.AlarmThread;
+import com.liyu.piloting.config.AlarmConf;
+import com.liyu.piloting.config.LineConfig;
+import com.liyu.piloting.model.AlarmModelEnum;
 import com.liyu.piloting.model.Point;
 import com.liyu.piloting.rxtx.RxtxServer;
 import com.liyu.piloting.rxtx.SerialPortParam;
@@ -38,6 +43,12 @@ public class AppRunner implements ApplicationRunner {
     private SerialPortParam serialPortParam;
     @Autowired
     private PositionTest positionTest;
+    @Autowired
+    LineConfig lineConfig;
+    @Autowired
+    AlarmConf alarmConf;
+    @Autowired
+    FMSGCallBack_V31 fmsgCallBack_v31;
 
     @Value("${piloting.run.serial}")
     private boolean runFromSerial;
@@ -69,6 +80,16 @@ public class AppRunner implements ApplicationRunner {
             runFromLogFile();
         }
 
+
+        if(alarmConf.getModel()== AlarmModelEnum.HK.getModel()){
+            runAlarmListen();
+        }
+
+    }
+
+    private void runAlarmListen() {
+        AlarmThread alarmThread = new AlarmThread(lineConfig.getCameraList(), fmsgCallBack_v31);
+        SystemThreadPool.doExecute(alarmThread);
     }
 
     private void runFromNetty() {
@@ -120,7 +141,7 @@ public class AppRunner implements ApplicationRunner {
                                 Thread.sleep(1000 * 10);
                             } catch (InterruptedException ex) {
                                 ex.printStackTrace();
-                                log.error("listen sleep error", e);
+                                log.error("listen sleep error", ex);
                             }
                         }
                     }

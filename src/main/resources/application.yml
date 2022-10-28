@@ -17,8 +17,14 @@ piloting:
       - longitude: 111.876445
         latitude: 21.8690705
         deviceSerial: K30567517
-        name: 1号口
+        sSerialNumber: DS-IPC-B12H-I20200108AACHE09823228 #设备序列号
+        name: 0号口
         url: https://open.ys7.com/v3/openlive/K30567517_1_1.m3u8?expire=1695464623&id=495299587758632960&t=e1d08a6212aaba07ff21e953df75b25c84cfcc954c3e724d7eab2e40b0c947ce&ev=100
+        id: 5
+        ip: 192.168.100.98
+        port: 8000
+        user: admin
+        psw: Haylion123
   judgment:
     model: 2 #拉取摄像头计算方式 1：方向，2距离
     position:
@@ -53,10 +59,15 @@ piloting:
       line-stop-judgment-variance: 2 #停车位置数据的方差大小 小于等于此值算停车
       line-stop-judgment-time-interval: 5000 #停车位置计算时间间隔
   alarm:
+    model: 2 #1萤石云 2 listen
     search-time-forward-millis: 5000 #查询时向时间（即告警过期时间）默认5s
     search-time-millis-interval: 3000 #查询间隔时间 默认3s
+    alarm-interval: 5000 #间隔时间 默认2s 2秒内只告警一次（用于主动监听）
+    noalarm-interval: 5000 #无告警间隔时间
     alarm-type: #告警类型，默认为-1（全部）
       - 10002
+    dwAlarmType: #移动侦测、视频丢失、遮挡、IO信号量等报警信息(V3.0以上版本支持的设备)
+      - 3
     status: 0 #告警消息状态：2-所有，1-已读，0-未读，默认为0（未读状态）
   run:
     netty: false

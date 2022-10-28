@@ -29,8 +29,12 @@ public class AlarmConf {
      * 查询间隔时间
      */
     private Long searchTimeMillisInterval;
+    private Long alarmInterval;
+    private Long noalarmInterval;
     private List<Integer> alarmType;
+    private List<Integer> dwAlarmType;
     private Integer status;
+    private Integer model;
 
 
 }
