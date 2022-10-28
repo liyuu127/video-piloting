@@ -57,18 +57,37 @@ public class PilotingService {
 
     public void process(Point point) {
 
+        if (!validPoint(point)) {
+            return;
+        }
         //数据入队
-        if (pointInQueue(point)) return;
-
+        pointInQueue(point);
 
 //        log.info("deque.size()={},lineInstance={}", deque.size(), lineInstance.toString());
         //判断车辆是否启动及启动后方向
-        if (!directionJudgment()) return;
+        //没计算出方向返回false
+        direction();
 
-        //确定方向后计算拉流摄像头
-        pullCameraAndAlarm();
+        pullCamera();
 
 
+    }
+
+    private void direction() {
+        if (lineJudgmentConfig.getDirectionEnable()) {
+            directionJudgment();
+        }
+    }
+
+    private void pullCamera() {
+        if (lineJudgmentConfig.getModel() == JudgmentModelEnum.DIRECTION.getModel()) {
+            //确定方向后计算拉流摄像头
+            if (validDirection()) {
+                pullCameraAndAlarm();
+            }
+        } else if (lineJudgmentConfig.getModel() == JudgmentModelEnum.DISTANCE.getModel()) {
+            pullCameraAndAlarm();
+        }
     }
 
     private void lineStopJudgment() {
@@ -110,31 +129,45 @@ public class PilotingService {
 
     }
 
-    private boolean pointInQueue(Point point) {
-        long now = System.currentTimeMillis();
-        long positionExpireTime = lineJudgmentConfig.getPositionExpireTime();
-        long positionStoreInterval = lineJudgmentConfig.getPositionStoreInterval();
+    /**
+     * 数据入队
+     *
+     * @param point 采集点
+     * @return false 数据有效 true 数据过滤
+     */
+    private void pointInQueue(Point point) {
+
         int positionQueueCapacity = lineJudgmentConfig.getPositionQueueCapacity();
-
-        //当前数据超过2s过期
-//        if (now - point.getTimestamp() > positionExpireTime) {
-//            log.debug("pointInQueue expire pre={},positionExpireTime={}", point.getTimestamp(), positionExpireTime);
-//            return true;
-//        }
-
-        //距离上次数据更新是否超过1s
-        if (now - this.updateQueueTimestamp < positionStoreInterval) {
-            log.debug("pointInQueue interval pre={},positionStoreInterval={}", updateQueueTimestamp, positionStoreInterval);
-            return true;
-        }
-
         if (deque.size() >= positionQueueCapacity) {
             deque.removeFirst();
         }
         deque.addLast(point);
         updateQueueTimestamp = System.currentTimeMillis();
+    }
 
-        return false;
+    /**
+     * 判断当前位置是否有效
+     *
+     * @param point
+     * @return
+     */
+    private boolean validPoint(Point point) {
+        long now = System.currentTimeMillis();
+        long positionExpireTime = lineJudgmentConfig.getPositionExpireTime();
+        long positionStoreInterval = lineJudgmentConfig.getPositionStoreInterval();
+
+//        if (now - point.getTimestamp() > positionExpireTime) {
+//            //当前数据过期
+//            log.debug("validPoint expire pre={},positionExpireTime={}", point.getTimestamp(), positionExpireTime);
+//            return false;
+//        }
+
+        if (now - this.updateQueueTimestamp < positionStoreInterval) {
+            //距离上次数据更新还未超过1s
+            log.debug("validPoint interval pre={},positionStoreInterval={}", updateQueueTimestamp, positionStoreInterval);
+            return false;
+        }
+        return true;
     }
 
     private void lineEndJudgment() {
@@ -168,11 +201,15 @@ public class PilotingService {
 
     }
 
+
+    /**
+     * 拉取取摄像头
+     */
     private void pullCameraAndAlarm() {
         //根据最近几个位置和方向判断最近的摄像头拉取
         int pullCameraJudgmentPositionCount = lineJudgmentConfig.getPullCameraJudgmentPositionCount();
         if (deque.size() >= pullCameraJudgmentPositionCount) {
-            //当前是否有摄像头正在拉取，尝试判断是否驶离
+            //当前是否有摄像头正在拉取，尝试判断是否驶离距离范围
             nowCameraOverJudgment();
             //判断是否拉取下一个摄像头
             pullNextCamera();
@@ -181,11 +218,12 @@ public class PilotingService {
         }
     }
 
+    /**
+     * 判断当前摄像头是否结束
+     */
     private void nowCameraOverJudgment() {
-        int pullCameraJudgmentPositionCount = lineJudgmentConfig.getPullCameraJudgmentPositionCount();
         Camera nowCamera = lineInstance.getNowCamera();
         if (nowCamera != null) {
-
             //拉取告警
             Long alarmInterval = alarmConf.getSearchTimeMillisInterval();
             if (System.currentTimeMillis() > alarmInterval + searchAlarmTimestamp) {
@@ -195,39 +233,94 @@ public class PilotingService {
                 log.debug("search alarm pre={},alarmInterval={}", searchAlarmTimestamp, alarmInterval);
             }
 
+            boolean over = judgmentCameraOver(nowCamera);
+            if (over) {
+                log.info("nowCameraOverJudgment  camera ,camera={}", nowCamera);
+                WebSocketMessage<Camera> message = new WebSocketMessage<>();
+                message.setContent(nowCamera)
+                        .setMsgType(VIDEO_PILOTING_CAMERA_OVER);
+                WebSocketSender.pushMessageToAll(message);
+                log.info("nowCameraOverJudgment  websocket camera over ={}", nowCamera.toString());
+
+                lineInstance.setLastCamera(nowCamera);
+                lineInstance.setNowCamera(null);
+            }
+
+        }
+    }
+
+    /**
+     * 判断当前摄像头是否驶离
+     *
+     * @param nowCamera
+     * @return
+     */
+    private boolean judgmentCameraOver(Camera nowCamera) {
+        boolean over = false;
+        Point referencePoint = new Point();
+        referencePoint.setLatitude(nowCamera.getLatitude());
+        referencePoint.setLongitude(nowCamera.getLongitude());
+
+        int pullCameraOverPositionCount = lineJudgmentConfig.getPullCameraOverPositionCount();
+        int cameraOverSatisfyDistanceMeter = lineJudgmentConfig.getCameraOverSatisfyDistanceMeter();
+        int cameraOverSatisfyDistanceCount = lineJudgmentConfig.getCameraOverSatisfyDistanceCount();
+        if (lineJudgmentConfig.getModel() == JudgmentModelEnum.DIRECTION.getModel()) {
+            int pullCameraJudgmentPositionCount = lineJudgmentConfig.getPullCameraJudgmentPositionCount();
             double pullCameraJudgmentIntervalMeter = lineJudgmentConfig.getPullCameraJudgmentIntervalMeter();
             int pullCameraDirectionScoreThreshold = lineJudgmentConfig.getPullCameraDirectionScoreThreshold();
 
-            Point referencePoint = new Point();
-            referencePoint.setLatitude(nowCamera.getLatitude());
-            referencePoint.setLongitude(nowCamera.getLongitude());
             log.info("nowCameraOverJudgment nowCameraDirection?");
-            //相对摄像头方向
             int cameraDirection = directionWithReferencePoint(referencePoint, pullCameraJudgmentPositionCount, pullCameraJudgmentIntervalMeter, pullCameraDirectionScoreThreshold);
-            log.info("nowCameraOverJudgment nowCameraDirection={}", cameraDirection);
-            //驶离了摄像头指定距离后 可以停止拉流
-            if (cameraDirection < 0) {
-                log.info("nowCameraOverJudgment cameraOver?");
-                int pullCameraOverPositionCount = lineJudgmentConfig.getPullCameraOverPositionCount();
-                int cameraOverSatisfyDistanceCount = lineJudgmentConfig.getCameraOverSatisfyDistanceCount();
-                int cameraOverSatisfyDistanceMeter = lineJudgmentConfig.getCameraOverSatisfyDistanceMeter();
-                int satisfyDistanceCountWithReferencePoint = getSatisfyDistanceCountWithReferencePoint(referencePoint, pullCameraOverPositionCount, cameraOverSatisfyDistanceMeter, false);
-                log.info("nowCameraOverJudgment satisfyDistanceCountWithReferencePoint={},cameraOverSatisfyDistanceCount={}", satisfyDistanceCountWithReferencePoint, cameraOverSatisfyDistanceCount);
-                //是否满足指定距离
-                if (satisfyDistanceCountWithReferencePoint >= cameraOverSatisfyDistanceCount) {
-                    log.info("nowCameraOverJudgment statusPullOver preCameraDirection={},lastCamera()={}", cameraDirection, lineInstance.getLastCamera());
-                    //
-                    WebSocketMessage<Camera> message = new WebSocketMessage<>();
-                    message.setContent(nowCamera)
-                            .setMsgType(VIDEO_PILOTING_CAMERA_OVER);
-                    WebSocketSender.pushMessageToAll(message);
-                    log.info("nowCameraOverJudgment  websocket camera over ={}", nowCamera.toString());
-
-                    lineInstance.setLastCamera(nowCamera);
-                    lineInstance.setNowCamera(null);
-                }
-            }
+            over = cameraOverJudgmentWithDirection(referencePoint, pullCameraOverPositionCount, cameraOverSatisfyDistanceMeter, cameraOverSatisfyDistanceCount, cameraDirection);
+        } else if (lineJudgmentConfig.getModel() == JudgmentModelEnum.DISTANCE.getModel()) {
+            over = cameraOverJudgmentWithDistance(referencePoint, pullCameraOverPositionCount, cameraOverSatisfyDistanceMeter, cameraOverSatisfyDistanceCount);
         }
+        return over;
+    }
+
+
+    /**
+     * 根据距离判断是否超出拉流距离
+     * 超出返回true
+     * 未超出返回false
+     *
+     * @param referencePoint                 计算点 相机位置
+     * @param calculatePositionCount         计算采点的数量
+     * @param distanceThreshold              超出阈值
+     * @param cameraOverSatisfyDistanceCount 满足条件的最低得分
+     * @return
+     */
+    private boolean cameraOverJudgmentWithDistance(Point referencePoint, int calculatePositionCount, int distanceThreshold, int cameraOverSatisfyDistanceCount) {
+        int satisfyDistanceCountWithReferencePoint = getSatisfyDistanceCountWithReferencePoint(referencePoint, calculatePositionCount, distanceThreshold, false);
+        boolean cameraOver = satisfyDistanceCountWithReferencePoint >= cameraOverSatisfyDistanceCount;
+        log.info("cameraOverJudgmentWithDistance cameraOver={},want={},actual={}", cameraOver, cameraOverSatisfyDistanceCount, satisfyDistanceCountWithReferencePoint);
+        return cameraOver;
+    }
+
+    /**
+     * 在距离判断的基础上对方向进行筛选
+     * 根据方向和距离判断是否超出拉流距离
+     * 拉流结束返回true
+     * 拉流继续返回false
+     *
+     * @param referencePoint                 计算点 相机位置
+     * @param calculatePositionCount         计算采点的数量
+     * @param distanceThreshold              超出阈值
+     * @param cameraOverSatisfyDistanceCount 满足条件的最低得分
+     * @param relativeDirection              相对计算点的方向
+     * @return
+     */
+    private boolean cameraOverJudgmentWithDirection(Point referencePoint, int calculatePositionCount, int distanceThreshold, int cameraOverSatisfyDistanceCount, int relativeDirection) {
+
+        //相对方向未计算出或者正向,不考虑拉流结束
+        if (relativeDirection >= 0) {
+            log.info("cameraOverJudgmentWithDirection relativeDirection={},not over", relativeDirection);
+            return false;
+        }
+        int satisfyDistanceCountWithReferencePoint = getSatisfyDistanceCountWithReferencePoint(referencePoint, calculatePositionCount, distanceThreshold, false);
+        boolean cameraOver = satisfyDistanceCountWithReferencePoint >= cameraOverSatisfyDistanceCount;
+        log.info("cameraOverJudgmentWithDistance cameraOver={},want={},actual={}", cameraOver, cameraOverSatisfyDistanceCount, satisfyDistanceCountWithReferencePoint);
+        return cameraOver;
     }
 
     private void pullNextCamera() {
@@ -236,46 +329,113 @@ public class PilotingService {
             return;
         }
         Camera next = null;
-        //上次是否计算过
+        if (lineJudgmentConfig.getModel() == JudgmentModelEnum.DIRECTION.getModel()) {
+            next = pullNextCameraWithDirection();
+
+        } else if (lineJudgmentConfig.getModel() == JudgmentModelEnum.DISTANCE.getModel()) {
+            next = pullNextCameraWithDistance();
+        }
+
+        if (next == null) {
+            log.info("pullNextCamera next is null");
+            return;
+        }
+
+        WebSocketMessage<Camera> message = new WebSocketMessage<>();
+        message.setContent(next)
+                .setMsgType(VIDEO_PILOTING_CAMERA);
+        WebSocketSender.pushMessageToAll(message);
+        log.info("pullNextCamera websocket pull new camera ={}", next);
+        //查询一次告警
+        alarmService.processAlarm(next.getDeviceSerial());
+        searchAlarmTimestamp = System.currentTimeMillis();
+        lineInstance.setNowCamera(next);
+        lineInstance.setNextCamera(null);
+
+    }
+
+    /**
+     * 根据方向和距离拉取下个摄像头
+     *
+     * @return null 不符合拉取条件，camera 拉取成功
+     */
+    public Camera pullNextCameraWithDirection() {
+        Camera next = null;
+        //上次是否计算过 上次计算过就不要计算
         if (lineInstance.getNextCamera() != null) {
             next = lineInstance.getNextCamera();
         }
         //计算下一个摄像头
         if (next == null) {
-            next = getNextCamera();
+            next = getNextCameraWithDirection();
+        }
+        if (next == null) {
+            log.info("pullNextCameraWithDirection next is null");
+            return null;
         }
 
-        //判断是否到拉取的位置
-        if (next != null) {
-            int pullCameraJudgmentPositionCount = lineJudgmentConfig.getPullCameraJudgmentPositionCount();
-            int pullCameraSatisfyDistanceMeter = lineJudgmentConfig.getPullCameraSatisfyDistanceMeter();
-            int pullCameraSatisfyDistanceCount = lineJudgmentConfig.getPullCameraSatisfyDistanceCount();
-
-            Point rp = new Point();
-            rp.setLatitude(next.getLatitude());
-            rp.setLongitude(next.getLongitude());
-            log.info("pullNextCamera camera distance?");
-            int satisfyDistanceCount = getSatisfyDistanceCountWithReferencePoint(rp, pullCameraJudgmentPositionCount, pullCameraSatisfyDistanceMeter, true);
-
-            //满足具体要求时拉取摄像头
-            log.info("pullNextCamera satisfyDistanceCount={},pullCameraSatisfyDistanceCount={},camera={}", satisfyDistanceCount, pullCameraSatisfyDistanceCount, next.toString());
-            if (satisfyDistanceCount >= pullCameraSatisfyDistanceCount) {
-
-                WebSocketMessage<Camera> message = new WebSocketMessage<>();
-                message.setContent(next)
-                        .setMsgType(VIDEO_PILOTING_CAMERA);
-                WebSocketSender.pushMessageToAll(message);
-                log.info("pullNextCamera websocket pull new camera ={}", next.toString());
-                //查询一次告警
-                alarmService.processAlarm(next.getDeviceSerial());
-                searchAlarmTimestamp = System.currentTimeMillis();
-                lineInstance.setNowCamera(next);
-                lineInstance.setNextCamera(null);
-            }
-        } else {
-            log.info("pullNextCamera next is null");
+        //判断是否符合拉去距离
+        if (cameraPositionInDistance(next)) {
+            return next;
         }
+        log.info("pullNextCameraWithDirection next is null");
+        return null;
     }
+
+
+    /**
+     * 遍历所有摄像头找出满足的距离最小的拉取
+     *
+     * @return
+     */
+    public Camera pullNextCameraWithDistance() {
+
+        List<Camera> cameraList = lineInstance.getCameraList();
+        double min = Double.MAX_VALUE;
+        Camera next = null;
+        for (Camera camera : cameraList) {
+            //计算是否满足距离
+            if (!cameraPositionInDistance(camera)) {
+                log.info("pullNextCameraWithDistance unsatisfied camera={}", camera);
+                continue;
+            }
+            //计算平均距离
+            Point rp = new Point();
+            rp.setLatitude(camera.getLatitude());
+            rp.setLongitude(camera.getLongitude());
+            double distance = distanceWithReferencePoint(rp, lineJudgmentConfig.getPullCameraSatisfyDistanceCount());
+            log.info("pullNextCameraWithDistance camera distance={}, camera={}", distance, camera);
+            if (distance <= min) {
+                min = distance;
+                next = camera;
+            }
+        }
+        return next;
+    }
+
+    /**
+     * 摄像机位置是否在拉取范围内
+     *
+     * @param next 摄像机
+     * @return true 在拉取位置内 false 不在
+     */
+    private boolean cameraPositionInDistance(Camera next) {
+        int pullCameraJudgmentPositionCount = lineJudgmentConfig.getPullCameraJudgmentPositionCount();
+        int pullCameraSatisfyDistanceMeter = lineJudgmentConfig.getPullCameraSatisfyDistanceMeter();
+        int pullCameraSatisfyDistanceCount = lineJudgmentConfig.getPullCameraSatisfyDistanceCount();
+
+        Point rp = new Point();
+        rp.setLatitude(next.getLatitude());
+        rp.setLongitude(next.getLongitude());
+        log.info("cameraPositionInDistance camera distance?");
+        int satisfyDistanceCount = getSatisfyDistanceCountWithReferencePoint(rp, pullCameraJudgmentPositionCount, pullCameraSatisfyDistanceMeter, true);
+
+        //满足具体要求时拉取摄像头
+        boolean inDistance = satisfyDistanceCount >= pullCameraSatisfyDistanceCount;
+        log.info("cameraPositionInDistance inDistance={},want={},actual={},camera={}", inDistance, pullCameraSatisfyDistanceCount, satisfyDistanceCount, next.toString());
+        return inDistance;
+    }
+
 
     /**
      * 满足指定距离的点数量
@@ -315,15 +475,14 @@ public class PilotingService {
         return satisfyDistanceCount;
     }
 
+    /**
+     * 计算车辆方向
+     *
+     * @return
+     */
     private boolean directionJudgment() {
-        if (lineInstance.getDirection() != null && lineInstance.getDirectionTimestamp() != null) {
-            long interval = lineJudgmentConfig.getDirectionCalculateInterval();
-            //方向还未失效
-            if (System.currentTimeMillis() <= interval + lineInstance.getDirectionTimestamp()) {
-                log.debug("directionJudgment not expire pre={},interval={}", lineInstance.getDirectionTimestamp(), interval);
-                return true;
-            }
-        }
+        //方向有效不进行计算
+        if (validDirection()) return true;
         boolean success = true;
         //根据相对起点的距离趋势判断行驶方向
         int directionJudgmentPositionCount = lineJudgmentConfig.getDirectionJudgmentPositionCount();
@@ -374,6 +533,23 @@ public class PilotingService {
             success = false;
         }
         return success;
+    }
+
+    /**
+     * 判断当前方向是否有效 方向值存在且未过期
+     *
+     * @return boolean true 有效的，false 无效的
+     */
+    private boolean validDirection() {
+        if (lineInstance.getDirection() != null && lineInstance.getDirectionTimestamp() != null) {
+            long interval = lineJudgmentConfig.getDirectionCalculateInterval();
+            //方向还未失效
+            if (System.currentTimeMillis() <= interval + lineInstance.getDirectionTimestamp()) {
+                log.debug("directionJudgment not expire pre={},interval={}", lineInstance.getDirectionTimestamp(), interval);
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -466,11 +642,16 @@ public class PilotingService {
         return distanceSum / calculatePositionCount;
     }
 
-    private Camera getNextCamera() {
+    /**
+     * 通过行驶方向计算下个应该拉取的摄像头
+     *
+     * @return
+     */
+    private Camera getNextCameraWithDirection() {
         //获取下一个摄像头
         List<Camera> cameraList = lineInstance.getCameraList();
         if (cameraList.isEmpty()) {
-            log.info("pullNextCamera cameraList is empty");
+            log.info("getNextCameraWithDirection cameraList is empty");
         }
         double pullCameraJudgmentIntervalMeter = lineJudgmentConfig.getPullCameraJudgmentIntervalMeter();
         int pullCameraJudgmentPositionCount = lineJudgmentConfig.getPullCameraJudgmentPositionCount();
@@ -483,7 +664,7 @@ public class PilotingService {
                 Point rp = new Point();
                 rp.setLatitude(camera.getLatitude());
                 rp.setLongitude(camera.getLongitude());
-                log.info("pullNextCamera direction ?");
+                log.info("getNextCameraWithDirection direction ?");
                 int d = directionWithReferencePoint(rp, pullCameraJudgmentPositionCount, pullCameraJudgmentIntervalMeter, pullCameraDirectionScoreThreshold);
                 if (d > 0) {
                     return camera;
@@ -495,7 +676,7 @@ public class PilotingService {
                 Point rp = new Point();
                 rp.setLatitude(camera.getLatitude());
                 rp.setLongitude(camera.getLongitude());
-                log.info("pullNextCamera direction ?");
+                log.info("getNextCameraWithDirection direction ?");
                 int d = directionWithReferencePoint(rp, pullCameraJudgmentPositionCount, pullCameraJudgmentIntervalMeter, pullCameraDirectionScoreThreshold);
                 if (d > 0) {
                     return camera;

@@ -21,6 +21,10 @@ public class LineJudgmentConfig {
     private CameraConf camera;
     private StopConf stop;
     private DirectionConf direction;
+    /**
+     * #拉取摄像头计算方式 1：方向，2距离
+     */
+    private Integer model;
 
 
     public long getDirectionCalculateInterval(){
@@ -51,6 +55,9 @@ public class LineJudgmentConfig {
         return this.end.getLineEndSatisfyDistanceMeter();
     }
 
+    public boolean getDirectionEnable(){
+        return this.direction.isEnable();
+    }
 
     public int getPullCameraJudgmentPositionCount() {
         return this.camera.getPullCameraJudgmentPositionCount();

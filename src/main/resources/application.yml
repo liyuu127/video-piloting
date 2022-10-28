@@ -20,11 +20,13 @@ piloting:
         name: 1号口
         url: https://open.ys7.com/v3/openlive/K30567517_1_1.m3u8?expire=1695464623&id=495299587758632960&t=e1d08a6212aaba07ff21e953df75b25c84cfcc954c3e724d7eab2e40b0c947ce&ev=100
   judgment:
+    model: 2 #拉取摄像头计算方式 1：方向，2距离
     position:
       position-expireTime: 8000 #数据过期期间间隔 ms 默认8秒
       position-store-interval: 1000 #数据计算间隔 ms
       position-queueCapacity: 20 #位置队列容量
     direction:
+      enable: true #是否计算方向
       direction-judgment-position-count: 6 #判断方向的位置的数量
       direction-judgment-interval-meter: 1.5 #开始移动时判断距离
       direction-score-threshold: 3 #开始方向计算得分，大于等于此值才判断分数有效
@@ -39,12 +41,12 @@ piloting:
       line-end-satisfy-distance-meter: 100 #到站时站点距离
     camera:
       pull-camera-judgment-position-count: 6 #判断拉取摄像头位置的数量
-      pull-camera-satisfy-distance-meter: 1000 #拉取摄像头的符合距离的大小
+      pull-camera-satisfy-distance-meter: 400 #拉取摄像头的符合距离的大小
       pull-camera-satisfy-distance-count: 3 #拉取摄像头的符合距离的位置个数，必须低于采集的数量
       pull-camera-judgment-interval-meter: 1.5 #拉取摄像头方向时判断距离
       pull-camera-over-position-count: 6 #摄像头离开位置的数量
       pull-camera-direction-score-threshold: 2 #拉取摄像头方向计算得分，大于等于此值才判断分数有效
-      camera-over-satisfy-distance-meter: 50 #驶离多远算摄像头离站
+      camera-over-satisfy-distance-meter: 400 #驶离多远算摄像头离站
       camera-over-satisfy-distance-count: 3 #摄像头离站效位置数量
     stop:
       line-stop-judgment-position-count: 15 #判断停车的位置的数量
@@ -57,9 +59,9 @@ piloting:
       - 10002
     status: 0 #告警消息状态：2-所有，1-已读，0-未读，默认为0（未读状态）
   run:
-    netty: true
+    netty: false
     serial: false
-    log: false
+    log: true
     generate: false
 log:
   path: ../log

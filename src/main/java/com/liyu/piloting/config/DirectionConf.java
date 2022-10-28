@@ -19,6 +19,10 @@ public class DirectionConf {
      */
     private int directionJudgmentPositionCount = 4;
     /**
+     * 是否计算方向
+     */
+    private boolean enable;
+    /**
      * 开始移动时判断距离
      */
     private double directionJudgmentIntervalMeter = 1;
