@@ -1,7 +1,7 @@
 package com.liyu.piloting.system;
 
 import com.liyu.piloting.HKAlarm.NetSDKDemo.FMSGCallBack_V31;
-import com.liyu.piloting.HKAlarm.alarm.AlarmThread;
+import com.liyu.piloting.HKAlarm.alarm.AlarmListen;
 import com.liyu.piloting.config.AlarmConf;
 import com.liyu.piloting.config.LineConfig;
 import com.liyu.piloting.model.AlarmModelEnum;
@@ -22,7 +22,6 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
-import java.nio.file.Files;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -48,7 +47,7 @@ public class AppRunner implements ApplicationRunner {
     @Autowired
     AlarmConf alarmConf;
     @Autowired
-    FMSGCallBack_V31 fmsgCallBack_v31;
+    AlarmListen alarmListen;
 
     @Value("${piloting.run.serial}")
     private boolean runFromSerial;
@@ -60,7 +59,7 @@ public class AppRunner implements ApplicationRunner {
     private boolean runFromLogFile;
 
     @Override
-    public void run(ApplicationArguments args) throws Exception {
+    public void run(ApplicationArguments args) {
 
         //从串口设备读取
         if (runFromSerial) {
@@ -88,8 +87,13 @@ public class AppRunner implements ApplicationRunner {
     }
 
     private void runAlarmListen() {
-        AlarmThread alarmThread = new AlarmThread(lineConfig.getCameraList(), fmsgCallBack_v31);
-        SystemThreadPool.doExecute(alarmThread);
+        Thread alarmListener = new Thread(() -> {
+            log.info("alarmListener start");
+            this.alarmListen.start();
+            log.info("alarmListener start");
+        });
+
+        SystemThreadPool.doExecute(alarmListener);
     }
 
     private void runFromNetty() {

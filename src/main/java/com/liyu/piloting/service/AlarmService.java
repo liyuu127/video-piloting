@@ -234,7 +234,7 @@ public class AlarmService {
 
     public void sendNoAlarm(boolean interval) {
         if (interval && lastNoAlarmTimestamp + alarmConf.getNoalarmInterval() > System.currentTimeMillis()) {
-            log.info("sendNoAlarm alarm not expire lastAlarmTimestamp={},interval={}", lastAlarmTimestamp, alarmConf.getNoalarmInterval());
+            log.info("sendNoAlarm alarm not expire lastNoAlarmTimestamp={},interval={}", lastNoAlarmTimestamp, alarmConf.getNoalarmInterval());
             return;
         }
         if (interval && lastAlarmTimestamp + alarmConf.getNoalarmInterval() > System.currentTimeMillis()) {
