@@ -5,8 +5,6 @@ import com.liyu.piloting.model.LineInstance;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.AutoConfigureAfter;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +16,7 @@ import javax.annotation.PostConstruct;
  * description
  */
 @Service
-//@DependsOn({"lineConfig"})
+@DependsOn({"lineConfig"})
 public class LineService {
     @Getter
     @Setter

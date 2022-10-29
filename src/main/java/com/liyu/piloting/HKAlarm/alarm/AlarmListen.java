@@ -5,22 +5,30 @@ import com.liyu.piloting.HKAlarm.CommonMethod.osSelect;
 import com.liyu.piloting.HKAlarm.NetSDKDemo.FMSGCallBack;
 import com.liyu.piloting.HKAlarm.NetSDKDemo.FMSGCallBack_V31;
 import com.liyu.piloting.HKAlarm.NetSDKDemo.HCNetSDK;
+import com.liyu.piloting.config.LineConfig;
 import com.liyu.piloting.model.Camera;
-import com.liyu.piloting.util.SpringContextUtils;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.Arrays;
 import java.util.List;
 
 
 @Slf4j
-public class AlarmThread implements Runnable {
-    public AlarmThread(List<Camera> cameraList, FMSGCallBack_V31 fMSFCallBack_V31) {
-        this.cameraList = cameraList;
-        this.fMSFCallBack_V31 = fMSFCallBack_V31;
-    }
+@Component
+@DependsOn({"fmsgCallBack_v31"})
+public class AlarmListen {
+
+    @Autowired
+    LineConfig lineConfig;
+    @Autowired
+    FMSGCallBack_V31 fmsgCallBack_v31;
 
     private List<Camera> cameraList;
     private FMSGCallBack_V31 fMSFCallBack_V31 = null;
@@ -32,9 +40,11 @@ public class AlarmThread implements Runnable {
     static int lListenHandle = -1;//报警监听句柄
     static FMSGCallBack fMSFCallBack = null;
 
-    @Override
-    public void run() {
-        log.info("HK Alarm alarmThread start");
+    @PostConstruct
+    public void init() {
+        log.info("HK AlarmListen init start");
+        this.cameraList = lineConfig.getCameraList();
+        this.fMSFCallBack_V31 = fmsgCallBack_v31;
 
         if (cameraList.isEmpty()) {
             log.info("HK Alarm cameraList is empty");
@@ -46,7 +56,6 @@ public class AlarmThread implements Runnable {
         Arrays.fill(lAlarmHandle, -1);
         lAlarmHandle_V50 = new int[size];
         Arrays.fill(lAlarmHandle_V50, -1);
-
 
         if (hCNetSDK == null) {
             if (!CreateSDKInstance()) {
@@ -100,7 +109,12 @@ public class AlarmThread implements Runnable {
         struNET_DVR_LOCAL_GENERAL_CFG.write();
         Pointer pStrNET_DVR_LOCAL_GENERAL_CFG = struNET_DVR_LOCAL_GENERAL_CFG.getPointer();
         hCNetSDK.NET_DVR_SetSDKLocalCfg(17, pStrNET_DVR_LOCAL_GENERAL_CFG);
+        log.info("HK AlarmListen init end");
+    }
 
+
+    public void start() {
+        log.info("HK AlarmListen start");
         //设置每个摄像头
         for (Camera camera : cameraList) {
 //            Login_V30(camera.getId(), camera.getIp(), camera.getPort(), camera.getUser(), camera.getPsw());
@@ -109,6 +123,7 @@ public class AlarmThread implements Runnable {
 
 //            startListen(camera.getIp(), camera.getPort());//报警监听，不需要登陆设备
         }
+
         while (true) {
             try {
                 log.info("HK Alarm thread is running");
@@ -121,6 +136,16 @@ public class AlarmThread implements Runnable {
 
     }
 
+    @PreDestroy
+    public void destroy() {
+        log.info("HK AlarmListen destroy start");
+        for (Camera camera : cameraList) {
+            Logout(camera.getId());
+        }
+        //释放SDK
+        hCNetSDK.NET_DVR_Cleanup();
+        log.info("HK AlarmListen destroy end");
+    }
 //    /**
 //     * @param args
 //     */
@@ -359,16 +384,16 @@ public class AlarmThread implements Runnable {
 
         if (lAlarmHandle[i] > -1) {
             if (!hCNetSDK.NET_DVR_CloseAlarmChan(lAlarmHandle[i])) {
-                System.out.println("撤防成功");
+                log.info("Logout i={} cancel alarm success", i);
             }
         }
         if (lListenHandle > -1) {
             if (!hCNetSDK.NET_DVR_StopListen_V30(lListenHandle)) {
-                System.out.println("停止监听成功");
+                log.info("Logout i={} cancel listen success", i);
             }
         }
         if (hCNetSDK.NET_DVR_Logout(lUserID[i])) {
-            System.out.println("注销成功");
+            log.info("Logout i={} logout success", i);
         }
 
         return;
