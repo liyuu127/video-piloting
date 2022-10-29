@@ -7,6 +7,7 @@ import com.liyu.piloting.HKAlarm.NetSDKDemo.FMSGCallBack_V31;
 import com.liyu.piloting.HKAlarm.NetSDKDemo.HCNetSDK;
 import com.liyu.piloting.model.Camera;
 import com.liyu.piloting.util.SpringContextUtils;
+import com.liyu.piloting.util.SystemThreadPool;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import lombok.extern.slf4j.Slf4j;
@@ -104,8 +105,16 @@ public class AlarmThread implements Runnable {
         //设置每个摄像头
         for (Camera camera : cameraList) {
 //            Login_V30(camera.getId(), camera.getIp(), camera.getPort(), camera.getUser(), camera.getPsw());
-            Login_V40(camera.getId(), camera.getIp(), camera.getPort(), camera.getUser(), camera.getPsw());  //登录设备
-            SetAlarm(camera.getId());
+            Thread register = new Thread(
+                    () -> {
+                        log.info("camera i={} start register", camera.getId());
+                        Login_V40(camera.getId(), camera.getIp(), camera.getPort(), camera.getUser(), camera.getPsw());  //登录设备
+                        SetAlarm(camera.getId());
+                        log.info("camera i={} start register success", camera.getId());
+                    }
+            );
+            SystemThreadPool.doExecute(register);
+
 
 //            startListen(camera.getIp(), camera.getPort());//报警监听，不需要登陆设备
         }
@@ -231,14 +240,27 @@ public class AlarmThread implements Runnable {
 //        m_strLoginInfo.byLoginMode=1;  //ISAPI登录
         m_strLoginInfo.write();
 
-        lUserID[i] = hCNetSDK.NET_DVR_Login_V40(m_strLoginInfo, m_strDeviceInfo);
-        if (lUserID[i] == -1) {
-            System.out.println("登录失败，错误码为" + hCNetSDK.NET_DVR_GetLastError());
-            return;
+        int login_v40 = hCNetSDK.NET_DVR_Login_V40(m_strLoginInfo, m_strDeviceInfo);
+        if (login_v40 == -1) {
+            log.info("Login_V40 camera_i={}, fail code={}", i, hCNetSDK.NET_DVR_GetLastError());
+            //loop for login
+            while (login_v40 == -1) {
+                //sleep
+                try {
+                    Thread.sleep(1000 * 3);
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                    log.error("Login_V40 camera_i={} sleep error", i, ex);
+                }
+                // try again
+                login_v40 = hCNetSDK.NET_DVR_Login_V40(m_strLoginInfo, m_strDeviceInfo);
+                log.info("Login_V40 camera_i={} try again, login_v40={}", i, login_v40);
+            }
+
         } else {
-            System.out.println(ip + ":设备登录成功！");
-            return;
+            log.info("Login_V40 camera_i={}, success", i);
         }
+        lUserID[i] = login_v40;
     }
 
     /**
@@ -278,21 +300,31 @@ public class AlarmThread implements Runnable {
             m_strAlarmInfo.byAlarmInfoType = 1;   // 智能交通报警信息上传类型：0- 老报警信息（NET_DVR_PLATE_RESULT），1- 新报警信息(NET_ITS_PLATE_RESULT)
             m_strAlarmInfo.byDeployType = 0;   //布防类型：0-客户端布防，1-实时布防
             m_strAlarmInfo.write();
-            lAlarmHandle[i] = hCNetSDK.NET_DVR_SetupAlarmChan_V41(lUserID[i], m_strAlarmInfo);
-            System.out.println("lAlarmHandle: " + lAlarmHandle[i]);
-            if (lAlarmHandle[i] == -1) {
-                System.out.println("布防失败，错误码为" + hCNetSDK.NET_DVR_GetLastError());
-                return;
+            int alarmChan_v41 = hCNetSDK.NET_DVR_SetupAlarmChan_V41(lUserID[i], m_strAlarmInfo);
+            lAlarmHandle[i] = alarmChan_v41;
+            log.info("SetAlarm camera_i={},lAlarmHandle={} ", i, alarmChan_v41);
+            if (alarmChan_v41 == -1) {
+                log.info("SetAlarm camera_i={}, fail code={}", i, hCNetSDK.NET_DVR_GetLastError());
+                //loop for SetAlarm
+                while (alarmChan_v41 == -1) {
+                    //sleep
+                    try {
+                        Thread.sleep(1000 * 3);
+                    } catch (InterruptedException ex) {
+                        ex.printStackTrace();
+                        log.error("SetAlarm camera_i={} sleep error", i, ex);
+                    }
+                    // try again
+                    alarmChan_v41 = hCNetSDK.NET_DVR_SetupAlarmChan_V41(lUserID[i], m_strAlarmInfo);
+                    log.info("SetAlarm camera_i={} try again, alarmChan_v41={}", i, alarmChan_v41);
+                }
             } else {
-                System.out.println("布防成功");
-
+                log.info("SetAlarm camera_i={}, success", i);
             }
+            lAlarmHandle[i] = alarmChan_v41;
         } else {
-
-            System.out.println("设备已经布防，请先撤防！");
+            log.info("设备已经布防，请先撤防！");
         }
-        return;
-
     }
 
 
