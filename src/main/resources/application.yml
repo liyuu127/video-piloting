@@ -17,14 +17,14 @@ piloting:
       - longitude: 111.876445
         latitude: 21.8690705
         deviceSerial: K30567517
-        sSerialNumber: DS-IPC-B12H-I20200108AACHE09823228 #设备序列号
-        name: 0号口
+        name: 道口
         url: https://open.ys7.com/v3/openlive/K30567517_1_1.m3u8?expire=1695464623&id=495299587758632960&t=e1d08a6212aaba07ff21e953df75b25c84cfcc954c3e724d7eab2e40b0c947ce&ev=100
-        id: 5
+        id: 0
         ip: 192.168.100.98
         port: 8000
         user: admin
         psw: Haylion123
+        sSerialNumber: DS-IPC-B12H-I20200108AACHE09823228 #设备序列号
   judgment:
     model: 2 #拉取摄像头计算方式 1：方向，2距离
     position:

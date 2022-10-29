@@ -61,7 +61,7 @@ public class AlarmListen {
 
         if (hCNetSDK == null) {
             if (!CreateSDKInstance()) {
-                log.info("HK Alarm Load SDK fail");
+                log.error("HK Alarm Load SDK fail");
                 return;
             }
         }
@@ -96,7 +96,7 @@ public class AlarmListen {
         if (fMSFCallBack_V31 != null) {
             Pointer pUser = null;
             if (!hCNetSDK.NET_DVR_SetDVRMessageCallBack_V31(fMSFCallBack_V31, pUser)) {
-                log.info("HK Alarm set callback func fail");
+                log.error("HK Alarm set callback func fail");
                 return;
             } else {
                 log.info("HK Alarm set callback func success");
@@ -349,7 +349,7 @@ public class AlarmListen {
             }
             lAlarmHandle[i] = alarmChan_v41;
         } else {
-            log.info("设备已经布防，请先撤防！");
+            log.error("设备已经布防，请先撤防！");
         }
     }
 
