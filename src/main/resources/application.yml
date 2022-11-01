@@ -18,7 +18,7 @@ piloting:
         latitude: 21.8690705
         deviceSerial: K30567517
         name: 道口
-        url: https://open.ys7.com/v3/openlive/K30567517_1_1.m3u8?expire=1695464623&id=495299587758632960&t=e1d08a6212aaba07ff21e953df75b25c84cfcc954c3e724d7eab2e40b0c947ce&ev=100
+        url: rtsp://admin:Haylion123@192.168.100.98:554/h265/ch1/main/av_stream
         id: 0
         ip: 192.168.100.98
         port: 8000
