@@ -54,13 +54,14 @@ piloting:
       pull-camera-direction-score-threshold: 2 #拉取摄像头方向计算得分，大于等于此值才判断分数有效
       camera-over-satisfy-distance-meter: 800 #驶离多远算摄像头离站
       camera-over-satisfy-distance-count: 3 #摄像头离站效位置数量
-      now-camera-refresh-push-interval: 50000 #摄像头拉流刷新时间
+      now-camera-refresh-push-interval: 600000 #摄像头拉流刷新时间
     stop:
       line-stop-judgment-position-count: 15 #判断停车的位置的数量
       line-stop-judgment-variance: 2 #停车位置数据的方差大小 小于等于此值算停车
       line-stop-judgment-time-interval: 5000 #停车位置计算时间间隔
   alarm:
     model: 2 #1萤石云 2 listen
+    first-delay-time: 8000 #第一次延迟8s播报
     search-time-forward-millis: 5000 #查询时向时间（即告警过期时间）默认5s
     search-time-millis-interval: 3000 #查询间隔时间 默认3s
     alarm-interval: 5000 #间隔时间 默认2s 2秒内只告警一次（用于主动监听）

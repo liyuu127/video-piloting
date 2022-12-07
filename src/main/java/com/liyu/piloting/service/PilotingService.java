@@ -48,6 +48,7 @@ public class PilotingService {
      * 查询告警间隔
      */
     private long searchAlarmTimestamp = System.currentTimeMillis();
+    private long alarmFirstDelayTimestamp = System.currentTimeMillis();
 
 
     @PostConstruct
@@ -225,20 +226,13 @@ public class PilotingService {
     private void nowCameraOverJudgment() {
         Camera nowCamera = getLineInstance().getNowCamera();
         if (nowCamera != null) {
-            //拉取告警
-            if (alarmConf.getModel() == AlarmModelEnum.HK.getModel()) {
-                //直接发一个无告警报文
-                alarmService.sendNoAlarm(true);
-            } else if (alarmConf.getModel() == AlarmModelEnum.YS7.getModel()) {
-                Long alarmInterval = alarmConf.getSearchTimeMillisInterval();
-                if (System.currentTimeMillis() > alarmInterval + searchAlarmTimestamp) {
-                    alarmService.processAlarm(nowCamera.getDeviceSerial());
-                    searchAlarmTimestamp = System.currentTimeMillis();
-                } else {
-                    log.debug("search alarm pre={},alarmInterval={}", searchAlarmTimestamp, alarmInterval);
-                }
+            //小于第一次延迟
+            long now = System.currentTimeMillis();
+            if (this.alarmFirstDelayTimestamp < now) {
+                searchAlarm(nowCamera);
+            } else {
+                log.info("firstDelayAlarm  alarmFirstDelayTimestamp={} ,now={}", this.alarmFirstDelayTimestamp, now);
             }
-
 
             boolean over = judgmentCameraOver(nowCamera);
             if (over) {
@@ -259,11 +253,30 @@ public class PilotingService {
         }
     }
 
+    private void searchAlarm(Camera nowCamera) {
+        //拉取告警
+        if (alarmConf.getModel() == AlarmModelEnum.HK.getModel()) {
+            //直接发一个无告警报文
+            alarmService.sendNoAlarm(true);
+        } else if (alarmConf.getModel() == AlarmModelEnum.YS7.getModel()) {
+            Long alarmInterval = alarmConf.getSearchTimeMillisInterval();
+            long now = System.currentTimeMillis();
+
+            //超过告警时间
+            if (now > alarmInterval + searchAlarmTimestamp) {
+                alarmService.processAlarm(nowCamera.getDeviceSerial());
+                searchAlarmTimestamp = now;
+            } else {
+                log.debug("search alarm pre={},alarmInterval={}", searchAlarmTimestamp, alarmInterval);
+            }
+        }
+    }
+
     private void refreshPushCamera(Camera nowCamera) {
         long refreshPushInterval = lineJudgmentConfig.getNowCameraRefreshPushInterval();
         //上次刷新时间+刷新间隔小于当前时间，再次刷新
         if (lastRefreshPushInterval + refreshPushInterval < System.currentTimeMillis()) {
-            log.info("--------refreshPushCamera camera={}", nowCamera);
+            log.info("refreshPushCamera camera={}", nowCamera);
             WebSocketMessage<Camera> message = new WebSocketMessage<>();
             message.setContent(nowCamera)
                     .setMsgType(VIDEO_PILOTING_CAMERA);
@@ -371,15 +384,19 @@ public class PilotingService {
         WebSocketSender.pushMessageToAll(message);
         log.info("pullNextCamera websocket pull new camera ={}", next);
 
-        if (alarmConf.getModel() == AlarmModelEnum.HK.getModel()) {
-            //直接发一个无告警报文
-            alarmService.sendNoAlarm(true);
-        } else if (alarmConf.getModel() == AlarmModelEnum.YS7.getModel()) {
-            //查询一次告警
-            alarmService.processAlarm(next.getDeviceSerial());
-            searchAlarmTimestamp = System.currentTimeMillis();
-        }
-        lastRefreshPushInterval = System.currentTimeMillis();
+        long now = System.currentTimeMillis();
+        //第一次延迟告警
+        this.alarmFirstDelayTimestamp = alarmConf.getFirstDelayTime() + now;
+
+//        if (alarmConf.getModel() == AlarmModelEnum.HK.getModel()) {
+//            //直接发一个无告警报文
+//            alarmService.sendNoAlarm(true);
+//        } else if (alarmConf.getModel() == AlarmModelEnum.YS7.getModel()) {
+//            //查询一次告警
+//            alarmService.processAlarm(next.getDeviceSerial());
+//            searchAlarmTimestamp = now;
+//        }
+        this.lastRefreshPushInterval = now;
         getLineInstance().setNowCamera(next);
         getLineInstance().setNextCamera(null);
 

@@ -28,6 +28,7 @@ public class AlarmConf {
     /**
      * 查询间隔时间
      */
+    private Long firstDelayTime;
     private Long searchTimeMillisInterval;
     private Long alarmInterval;
     private Long noalarmInterval;
