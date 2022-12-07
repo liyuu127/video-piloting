@@ -54,6 +54,7 @@ piloting:
       pull-camera-direction-score-threshold: 2 #拉取摄像头方向计算得分，大于等于此值才判断分数有效
       camera-over-satisfy-distance-meter: 800 #驶离多远算摄像头离站
       camera-over-satisfy-distance-count: 3 #摄像头离站效位置数量
+      now-camera-refresh-push-interval: 50000 #摄像头拉流刷新时间
     stop:
       line-stop-judgment-position-count: 15 #判断停车的位置的数量
       line-stop-judgment-variance: 2 #停车位置数据的方差大小 小于等于此值算停车

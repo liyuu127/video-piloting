@@ -27,9 +27,10 @@ public class LineJudgmentConfig {
     private Integer model;
 
 
-    public long getDirectionCalculateInterval(){
+    public long getDirectionCalculateInterval() {
         return this.direction.getDirectionCalculateInterval();
     }
+
     public int getDirectionJudgmentPositionCount() {
         return this.direction.getDirectionJudgmentPositionCount();
     }
@@ -55,7 +56,7 @@ public class LineJudgmentConfig {
         return this.end.getLineEndSatisfyDistanceMeter();
     }
 
-    public boolean getDirectionEnable(){
+    public boolean getDirectionEnable() {
         return this.direction.isEnable();
     }
 
@@ -128,5 +129,10 @@ public class LineJudgmentConfig {
 
     public long getLineStopJudgmentTimeInterval() {
         return this.stop.getLineStopJudgmentTimeInterval();
+    }
+
+
+    public long getNowCameraRefreshPushInterval() {
+        return camera.getNowCameraRefreshPushInterval();
     }
 }

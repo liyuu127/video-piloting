@@ -43,6 +43,7 @@ public class PilotingService {
     private Deque<Point> deque;
     private long updateQueueTimestamp = System.currentTimeMillis();
     private long endJudgmentTimestamp = System.currentTimeMillis();
+    private long lastRefreshPushInterval = System.currentTimeMillis();
     /**
      * 查询告警间隔
      */
@@ -250,8 +251,24 @@ public class PilotingService {
 
                 getLineInstance().setLastCamera(nowCamera);
                 getLineInstance().setNowCamera(null);
+            } else {
+                refreshPushCamera(nowCamera);
             }
 
+
+        }
+    }
+
+    private void refreshPushCamera(Camera nowCamera) {
+        long refreshPushInterval = lineJudgmentConfig.getNowCameraRefreshPushInterval();
+        //上次刷新时间+刷新间隔小于当前时间，再次刷新
+        if (lastRefreshPushInterval + refreshPushInterval < System.currentTimeMillis()) {
+            log.info("--------refreshPushCamera camera={}", nowCamera);
+            WebSocketMessage<Camera> message = new WebSocketMessage<>();
+            message.setContent(nowCamera)
+                    .setMsgType(VIDEO_PILOTING_CAMERA);
+            WebSocketSender.pushMessageToAll(message);
+            lastRefreshPushInterval = System.currentTimeMillis();
         }
     }
 
@@ -347,6 +364,7 @@ public class PilotingService {
             return;
         }
 
+        //拉取到新的摄像头
         WebSocketMessage<Camera> message = new WebSocketMessage<>();
         message.setContent(next)
                 .setMsgType(VIDEO_PILOTING_CAMERA);
@@ -361,7 +379,7 @@ public class PilotingService {
             alarmService.processAlarm(next.getDeviceSerial());
             searchAlarmTimestamp = System.currentTimeMillis();
         }
-
+        lastRefreshPushInterval = System.currentTimeMillis();
         getLineInstance().setNowCamera(next);
         getLineInstance().setNextCamera(null);
 

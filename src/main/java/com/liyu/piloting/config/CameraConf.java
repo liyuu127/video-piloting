@@ -49,4 +49,9 @@ public class CameraConf {
      */
     private int cameraOverSatisfyDistanceCount = 3;
 
+    /**
+     * 同一个摄像头刷新推送时间，默认50s
+     */
+    private long nowCameraRefreshPushInterval = 50 * 1000;
+
 }
