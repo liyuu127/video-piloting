@@ -17,6 +17,10 @@ public class WebSocketConstant {
      */
     public static final String VIDEO_PILOTING_CAMERA = "video_piloting_camera";
     public static final String VIDEO_PILOTING_CAMERA_OVER = "video_piloting_camera_over";
+    /**
+     * 当前摄像头网络丢失
+     */
+    public static final String CAMERA__NET_LOSE = "camera_net_lose";
     public static final String VIDEO_PILOTING_ALARM = "video_piloting_alarm";
     public static final String VIDEO_PILOTING_NO_ALARM = "video_piloting_no_alarm";
 

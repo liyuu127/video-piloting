@@ -10,6 +10,7 @@ import com.liyu.piloting.model.Camera;
 import com.liyu.piloting.util.SpringContextUtils;
 import com.liyu.piloting.util.SystemThreadPool;
 import com.sun.jna.Native;
+import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +20,11 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import static com.liyu.piloting.HKAlarm.NetSDKDemo.HCNetSDK.NET_DVR_CHECK_USER_STATUS;
 
 
 @Slf4j
@@ -37,10 +42,64 @@ public class AlarmListen {
 
     static HCNetSDK hCNetSDK = null;
     static int[] lUserID = new int[]{0, 0, 0, 0, 0};//用户句柄 实现对设备登录
+    static Map<Integer, Boolean> userIdStatus = new HashMap<>();
     static int[] lAlarmHandle = new int[]{-1, -1, -1, -1, -1};//报警布防句柄
     static int[] lAlarmHandle_V50 = new int[]{-1, -1, -1, -1, -1}; //v50报警布防句柄
     static int lListenHandle = -1;//报警监听句柄
     static FMSGCallBack fMSFCallBack = null;
+    // 异常回调
+    private HCNetSDK.FExceptionCallBack exceptionCallBack = new HCNetSDK.FExceptionCallBack() {
+        @Override
+        public void invoke(int dwType, int lUserID, int lHandle, Pointer pUser) {
+            NativeLong deviceid = pUser.getNativeLong(0);
+
+            System.out.println("预览异常：dwType=" + dwType + ",lUserID=" + lUserID + ",lHandle=" + lHandle + ",pUser="
+                    + deviceid.intValue());
+
+            //宏定义 宏定义值 含义
+            //EXCEPTION_EXCHANGE 0x8000 用户交互时异常（注册心跳超时，心跳间隔为2分钟）
+            //EXCEPTION_AUDIOEXCHANGE 0x8001 语音对讲异常
+            //EXCEPTION_ALARM 0x8002 报警异常
+            //EXCEPTION_PREVIEW 0x8003 网络预览异常
+            //EXCEPTION_SERIAL 0x8004 透明通道异常
+            //EXCEPTION_RECONNECT 0x8005 预览时重连
+            //EXCEPTION_ALARMRECONNECT 0x8006 报警时重连
+            //EXCEPTION_SERIALRECONNECT 0x8007 透明通道重连
+            //SERIAL_RECONNECTSUCCESS 0x8008 透明通道重连成功
+            //EXCEPTION_PLAYBACK 0x8010 回放异常
+            //EXCEPTION_DISKFMT 0x8011 硬盘格式化
+            //EXCEPTION_PASSIVEDECODE 0x8012 被动解码异常
+            //EXCEPTION_EMAILTEST 0x8013 邮件测试异常
+            //EXCEPTION_BACKUP 0x8014 备份异常
+            //PREVIEW_RECONNECTSUCCESS 0x8015 预览时重连成功
+            //ALARM_RECONNECTSUCCESS 0x8016 报警时重连成功
+            //RESUME_EXCHANGE 0x8017 用户交互恢复
+            //NETWORK_FLOWTEST_EXCEPTION 0x8018 网络流量检测异常
+            //EXCEPTION_PICPREVIEWRECONNECT 0x8019 图片预览重连
+            //PICPREVIEW_RECONNECTSUCCESS 0x8020 图片预览重连成功
+            //EXCEPTION_PICPREVIEW 0x8021 图片预览异常
+            //EXCEPTION_MAX_ALARM_INFO 0x8022 报警信息缓存已达上限
+            //EXCEPTION_LOST_ALARM 0x8023 报警丢失
+            //EXCEPTION_PASSIVETRANSRECONNECT 0x8024 被动转码重连
+            //PASSIVETRANS_RECONNECTSUCCESS 0x8025 被动转码重连成功
+            //EXCEPTION_PASSIVETRANS 0x8026 被动转码异常
+            //EXCEPTION_RELOGIN 0x8040 用户重登陆
+            //RELOGIN_SUCCESS 0x8041 用户重登陆成功
+            //EXCEPTION_PASSIVEDECODE_RECONNNECT 0x8042 被动解码重连
+            //EXCEPTION_CLUSTER_CS_ARMFAILED 0x8043 集群报警异常
+            //EXCEPTION_RELOGIN_FAILED 0x8044 重登陆失败，停止重登陆
+            //EXCEPTION_PREVIEW_RECONNECT_CLOSED 0x8045 关闭预览重连功能
+            //EXCEPTION_ALARM_RECONNECT_CLOSED 0x8046 关闭报警重连功能
+            //EXCEPTION_SERIAL_RECONNECT_CLOSED 0x8047 关闭透明通道重连功能
+            //EXCEPTION_PIC_RECONNECT_CLOSED 0x8048 关闭回显重连功能
+            //EXCEPTION_PASSIVE_DECODE_RECONNECT_CLOSED 0x8049 关闭被动解码重连功能
+            //EXCEPTION_PASSIVE_TRANS_RECONNECT_CLOSED 0x804a 关闭被动转码重连功能
+            userIdStatus.put(lUserID,false);
+
+
+        }
+
+    };
 
     @PostConstruct
     public void init() {
@@ -133,7 +192,7 @@ public class AlarmListen {
 
 //            startListen(camera.getIp(), camera.getPort());//报警监听，不需要登陆设备
         }
-
+        setExceptionCallBack();
         while (true) {
             try {
                 log.info("HK Alarm thread is running");
@@ -156,7 +215,8 @@ public class AlarmListen {
         hCNetSDK.NET_DVR_Cleanup();
         log.info("HK AlarmListen destroy end");
     }
-//    /**
+
+    //    /**
 //     * @param args
 //     */
 //    public static void main(String[] args) throws InterruptedException {
@@ -233,6 +293,16 @@ public class AlarmListen {
 //        hCNetSDK.NET_DVR_Cleanup();
 //        return;
 //    }
+    //设备在线状态监测
+    public Boolean checkDeviceOnLine(int cameraId) {
+        int userId = lUserID[cameraId];
+        return hCNetSDK.NET_DVR_RemoteControl(userId, NET_DVR_CHECK_USER_STATUS, null, 0);
+    }
+
+    //设备在线状态监测异步
+    public void setExceptionCallBack() {
+        hCNetSDK.NET_DVR_SetExceptionCallBack_V30(0,0, exceptionCallBack, null);
+    }
 
 
     /**
@@ -287,6 +357,8 @@ public class AlarmListen {
             log.info("Login_V40 camera_i={}, success", i);
         }
         lUserID[i] = login_v40;
+
+        userIdStatus.put(login_v40, true);
     }
 
     /**
