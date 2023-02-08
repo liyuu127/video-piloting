@@ -18,12 +18,12 @@ piloting:
         latitude: 21.8690705
         deviceSerial: K30567517
         name: 道口
-        url: rtsp://admin:Haylion123@192.168.100.98:554/h265/ch1/main/av_stream
+        url: rtsp://admin:abc12345@192.168.0.206:554/h265/ch1/main/av_stream
         id: 0
-        ip: 192.168.100.98
+        ip: 192.168.0.206
         port: 8000
         user: admin
-        psw: Haylion123
+        psw: abc12345
         sSerialNumber: DS-IPC-B12H-I20200108AACHE09823228 #设备序列号
   judgment:
     model: 2 #拉取摄像头计算方式 1：方向，2距离
@@ -54,7 +54,8 @@ piloting:
       pull-camera-direction-score-threshold: 2 #拉取摄像头方向计算得分，大于等于此值才判断分数有效
       camera-over-satisfy-distance-meter: 800 #驶离多远算摄像头离站
       camera-over-satisfy-distance-count: 3 #摄像头离站效位置数量
-      now-camera-refresh-push-interval: 600000 #摄像头拉流刷新时间
+      now-camera-refresh-push-interval: 5000 #摄像头拉流刷新时间
+      now-camera-refresh-over-interval: 5000 #摄像头拉流刷新时间
     stop:
       line-stop-judgment-position-count: 15 #判断停车的位置的数量
       line-stop-judgment-variance: 2 #停车位置数据的方差大小 小于等于此值算停车
@@ -71,6 +72,7 @@ piloting:
     dwAlarmType: #移动侦测、视频丢失、遮挡、IO信号量等报警信息(V3.0以上版本支持的设备)
       - 3
     status: 0 #告警消息状态：2-所有，1-已读，0-未读，默认为0（未读状态）
+    camera-listen: 1 #1主动监听 2主动查询
   run:
     netty: false
     serial: false

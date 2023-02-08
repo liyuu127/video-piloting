@@ -54,4 +54,6 @@ public class CameraConf {
      */
     private long nowCameraRefreshPushInterval = 50 * 1000;
 
+    private long nowCameraRefreshOverInterval = 50 * 1000;
+
 }

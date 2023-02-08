@@ -135,4 +135,8 @@ public class LineJudgmentConfig {
     public long getNowCameraRefreshPushInterval() {
         return camera.getNowCameraRefreshPushInterval();
     }
+
+    public long getNowCameraRefreshOverInterval() {
+        return camera.getNowCameraRefreshOverInterval();
+    }
 }

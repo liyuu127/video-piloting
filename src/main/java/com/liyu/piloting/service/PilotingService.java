@@ -1,5 +1,6 @@
 package com.liyu.piloting.service;
 
+import com.liyu.piloting.HKAlarm.alarm.AlarmListen;
 import com.liyu.piloting.config.AlarmConf;
 import com.liyu.piloting.config.LineConfig;
 import com.liyu.piloting.config.LineJudgmentConfig;
@@ -39,11 +40,14 @@ public class PilotingService {
     AlarmConf alarmConf;
     @Autowired
     LineService lineService;
+    @Autowired
+    AlarmListen alarmListen;
 
     private Deque<Point> deque;
     private long updateQueueTimestamp = System.currentTimeMillis();
     private long endJudgmentTimestamp = System.currentTimeMillis();
     private long lastRefreshPushInterval = System.currentTimeMillis();
+    private long lastRefreshOverInterval = System.currentTimeMillis();
     /**
      * 查询告警间隔
      */
@@ -226,12 +230,18 @@ public class PilotingService {
     private void nowCameraOverJudgment() {
         Camera nowCamera = getLineInstance().getNowCamera();
         if (nowCamera != null) {
+
+            //首次告警
             //小于第一次延迟
             long now = System.currentTimeMillis();
             if (this.alarmFirstDelayTimestamp < now) {
-                searchAlarm(nowCamera);
+                if (!alarmListen.queryDeviceOnLine(nowCamera.getId())) {
+                    log.info("nowCameraOverJudgment  nowCamera not online ={}", nowCamera);
+                } else {
+                    searchAlarm(nowCamera);
+                }
             } else {
-                log.info("firstDelayAlarm  alarmFirstDelayTimestamp={} ,now={}", this.alarmFirstDelayTimestamp, now);
+                log.info("nowCameraOverJudgment  alarmFirstDelayTimestamp={} ,now={}", this.alarmFirstDelayTimestamp, now);
             }
 
             boolean over = judgmentCameraOver(nowCamera);
@@ -241,7 +251,7 @@ public class PilotingService {
                 message.setContent(nowCamera)
                         .setMsgType(VIDEO_PILOTING_CAMERA_OVER);
                 WebSocketSender.pushMessageToAll(message);
-                log.info("nowCameraOverJudgment  websocket camera over ={}", nowCamera.toString());
+                log.info("nowCameraOverJudgment  websocket camera over ={}", nowCamera);
 
                 getLineInstance().setLastCamera(nowCamera);
                 getLineInstance().setNowCamera(null);
@@ -249,8 +259,8 @@ public class PilotingService {
                 refreshPushCamera(nowCamera);
             }
 
-
         }
+
     }
 
     private void searchAlarm(Camera nowCamera) {
@@ -282,6 +292,19 @@ public class PilotingService {
                     .setMsgType(VIDEO_PILOTING_CAMERA);
             WebSocketSender.pushMessageToAll(message);
             lastRefreshPushInterval = System.currentTimeMillis();
+        }
+    }
+
+    private void refreshOverCamera(Camera camera) {
+        long refreshOverInterval = lineJudgmentConfig.getNowCameraRefreshOverInterval();
+        //上次刷新时间+刷新间隔小于当前时间，再次刷新
+        if (lastRefreshOverInterval + refreshOverInterval < System.currentTimeMillis()) {
+            log.info("refreshOverCamera camera={}", camera);
+            WebSocketMessage<Camera> message = new WebSocketMessage<>();
+            message.setContent(camera)
+                    .setMsgType(VIDEO_PILOTING_CAMERA_OVER);
+            WebSocketSender.pushMessageToAll(message);
+            lastRefreshOverInterval = System.currentTimeMillis();
         }
     }
 
@@ -374,6 +397,11 @@ public class PilotingService {
 
         if (next == null) {
             log.info("pullNextCamera next is null");
+            //重复播放停止拉流
+            Camera lastCamera = getLineInstance().getLastCamera();
+            if (lastCamera != null) {
+                refreshOverCamera(lastCamera);
+            }
             return;
         }
 

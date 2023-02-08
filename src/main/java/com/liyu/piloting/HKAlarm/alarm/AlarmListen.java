@@ -5,10 +5,13 @@ import com.liyu.piloting.HKAlarm.CommonMethod.osSelect;
 import com.liyu.piloting.HKAlarm.NetSDKDemo.FMSGCallBack;
 import com.liyu.piloting.HKAlarm.NetSDKDemo.FMSGCallBack_V31;
 import com.liyu.piloting.HKAlarm.NetSDKDemo.HCNetSDK;
+import com.liyu.piloting.config.AlarmConf;
 import com.liyu.piloting.config.LineConfig;
 import com.liyu.piloting.model.Camera;
-import com.liyu.piloting.util.SpringContextUtils;
+import com.liyu.piloting.model.CameraListenEnum;
 import com.liyu.piloting.util.SystemThreadPool;
+import com.liyu.piloting.websocket.model.WebSocketMessage;
+import com.liyu.piloting.websocket.util.WebSocketSender;
 import com.sun.jna.Native;
 import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
@@ -24,7 +27,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.liyu.piloting.HKAlarm.NetSDKDemo.HCNetSDK.EXCEPTION_EXCHANGE;
 import static com.liyu.piloting.HKAlarm.NetSDKDemo.HCNetSDK.NET_DVR_CHECK_USER_STATUS;
+import static com.liyu.piloting.websocket.constant.WebSocketConstant.CAMERA_NET_LOSE;
+import static com.liyu.piloting.websocket.constant.WebSocketConstant.CAMERA_NET_RECOVER;
 
 
 @Slf4j
@@ -34,6 +40,8 @@ public class AlarmListen {
 
     @Autowired
     LineConfig lineConfig;
+    @Autowired
+    AlarmConf alarmConf;
     @Autowired
     FMSGCallBack_V31 fmsgCallBack_v31;
 
@@ -47,6 +55,7 @@ public class AlarmListen {
     static int[] lAlarmHandle_V50 = new int[]{-1, -1, -1, -1, -1}; //v50报警布防句柄
     static int lListenHandle = -1;//报警监听句柄
     static FMSGCallBack fMSFCallBack = null;
+
     // 异常回调
     private HCNetSDK.FExceptionCallBack exceptionCallBack = new HCNetSDK.FExceptionCallBack() {
         @Override
@@ -94,8 +103,18 @@ public class AlarmListen {
             //EXCEPTION_PIC_RECONNECT_CLOSED 0x8048 关闭回显重连功能
             //EXCEPTION_PASSIVE_DECODE_RECONNECT_CLOSED 0x8049 关闭被动解码重连功能
             //EXCEPTION_PASSIVE_TRANS_RECONNECT_CLOSED 0x804a 关闭被动转码重连功能
-            userIdStatus.put(lUserID,false);
-
+            if (dwType == EXCEPTION_EXCHANGE) {
+                userIdStatus.put(lUserID, false);
+                WebSocketMessage<Camera> message = new WebSocketMessage<>();
+                message.setContent(cameraList.get(0))
+                        .setMsgType(CAMERA_NET_LOSE);
+                WebSocketSender.pushMessageToAll(message);
+            } else if (dwType == 0x8017) {
+                userIdStatus.put(lUserID, true);
+                WebSocketMessage<Camera> message = new WebSocketMessage<>();
+                message.setContent(cameraList.get(0))
+                        .setMsgType(CAMERA_NET_RECOVER);
+            }
 
         }
 
@@ -192,7 +211,10 @@ public class AlarmListen {
 
 //            startListen(camera.getIp(), camera.getPort());//报警监听，不需要登陆设备
         }
-        setExceptionCallBack();
+        if (CameraListenEnum.LISTEN.getValue() == alarmConf.getCameraListen()) {
+            setExceptionCallBack();
+            log.info("setExceptionCallBack..........");
+        }
         while (true) {
             try {
                 log.info("HK Alarm thread is running");
@@ -216,92 +238,29 @@ public class AlarmListen {
         log.info("HK AlarmListen destroy end");
     }
 
-    //    /**
-//     * @param args
-//     */
-//    public static void main(String[] args) throws InterruptedException {
-//
-//        if (hCNetSDK == null) {
-//            if (!CreateSDKInstance()) {
-//                System.out.println("Load SDK fail");
-//                return;
-//            }
-//        }
-//        //linux系统建议调用以下接口加载组件库
-//        if (osSelect.isLinux()) {
-//            HCNetSDK.BYTE_ARRAY ptrByteArray1 = new HCNetSDK.BYTE_ARRAY(256);
-//            HCNetSDK.BYTE_ARRAY ptrByteArray2 = new HCNetSDK.BYTE_ARRAY(256);
-//            //这里是库的绝对路径，请根据实际情况修改，注意改路径必须有访问权限
-//            String strPath1 = "/home/LinuxSDK/libcrypto.so.1.1";
-//            String strPath2 = "/home/LinuxSDK/libssl.so.1.1";
-//
-//            System.arraycopy(strPath1.getBytes(), 0, ptrByteArray1.byValue, 0, strPath1.length());
-//            ptrByteArray1.write();
-//            hCNetSDK.NET_DVR_SetSDKInitCfg(3, ptrByteArray1.getPointer());
-//
-//            System.arraycopy(strPath2.getBytes(), 0, ptrByteArray2.byValue, 0, strPath2.length());
-//            ptrByteArray2.write();
-//            hCNetSDK.NET_DVR_SetSDKInitCfg(4, ptrByteArray2.getPointer());
-//
-//            String strPathCom = "/home/LinuxSDK/";
-//            HCNetSDK.NET_DVR_LOCAL_SDK_PATH struComPath = new HCNetSDK.NET_DVR_LOCAL_SDK_PATH();
-//            System.arraycopy(strPathCom.getBytes(), 0, struComPath.sPath, 0, strPathCom.length());
-//            struComPath.write();
-//            hCNetSDK.NET_DVR_SetSDKInitCfg(2, struComPath.getPointer());
-//        }
-//
-//        /**初始化*/
-//        hCNetSDK.NET_DVR_Init();
-//        /**加载日志*/
-//        hCNetSDK.NET_DVR_SetLogToFile(3, "../sdklog", false);
-//        //设置报警回调函数
-//        if (fMSFCallBack_V31 == null) {
-//            fMSFCallBack_V31 = new FMSGCallBack_V31();
-//            Pointer pUser = null;
-//            if (!hCNetSDK.NET_DVR_SetDVRMessageCallBack_V31(fMSFCallBack_V31, pUser)) {
-//                System.out.println("设置回调函数失败!");
-//                return;
-//            } else {
-//                System.out.println("设置回调函数成功!");
-//            }
-//        }
-//        /** 设备上传的报警信息是COMM_VCA_ALARM(0x4993)类型，
-//         在SDK初始化之后增加调用NET_DVR_SetSDKLocalCfg(enumType为NET_DVR_LOCAL_CFG_TYPE_GENERAL)设置通用参数NET_DVR_LOCAL_GENERAL_CFG的byAlarmJsonPictureSeparate为1，
-//         将Json数据和图片数据分离上传，这样设置之后，报警布防回调函数里面接收到的报警信息类型为COMM_ISAPI_ALARM(0x6009)，
-//         报警信息结构体为NET_DVR_ALARM_ISAPI_INFO（与设备无关，SDK封装的数据结构），更便于解析。*/
-//        HCNetSDK.NET_DVR_LOCAL_GENERAL_CFG struNET_DVR_LOCAL_GENERAL_CFG = new HCNetSDK.NET_DVR_LOCAL_GENERAL_CFG();
-//        struNET_DVR_LOCAL_GENERAL_CFG.byAlarmJsonPictureSeparate = 1;   //设置JSON透传报警数据和图片分离
-//        struNET_DVR_LOCAL_GENERAL_CFG.write();
-//        Pointer pStrNET_DVR_LOCAL_GENERAL_CFG = struNET_DVR_LOCAL_GENERAL_CFG.getPointer();
-//        hCNetSDK.NET_DVR_SetSDKLocalCfg(17, pStrNET_DVR_LOCAL_GENERAL_CFG);
-//        AlarmThread.Login_V40(0, "192.168.100.98", (short) 8000, "admin", "Haylion123");  //登录设备
-//
-//        AlarmThread.SetAlarm(0);//报警布防，和报警监听二选一即可
-//
-//        //  Alarm.StartListen("10.17.34.18",(short)8000);//报警监听，不需要登陆设备
-//        while (true) {
-//            //这里加入控制台输入控制，是为了保持连接状态，当输入Y表示布防结束
-//            System.out.print("请选择是否撤出布防(Y/N)：");
-//            Scanner input = new Scanner(System.in);
-//            String str = input.next();
-//            if (str.equals("Y")) {
-//                break;
-//            }
-//        }
-//        AlarmThread.Logout(0);
-//        //释放SDK
-//        hCNetSDK.NET_DVR_Cleanup();
-//        return;
-//    }
-    //设备在线状态监测
-    public Boolean checkDeviceOnLine(int cameraId) {
-        int userId = lUserID[cameraId];
-        return hCNetSDK.NET_DVR_RemoteControl(userId, NET_DVR_CHECK_USER_STATUS, null, 0);
+    public boolean queryDeviceOnLine(int cameraId) {
+
+        boolean online = true;
+        if (CameraListenEnum.LISTEN.getValue() == alarmConf.getCameraListen()) {
+            if (lUserID[cameraId] == -1) {
+                online = false;
+            } else {
+                Boolean b = userIdStatus.get(lUserID[cameraId]);
+                if (b == null || !b) {
+                    online = false;
+                }
+            }
+        } else if (CameraListenEnum.QUERY.getValue() == alarmConf.getCameraListen()) {
+            int userId = lUserID[cameraId];
+            online = hCNetSDK.NET_DVR_RemoteControl(userId, NET_DVR_CHECK_USER_STATUS, null, 0);
+        }
+        log.info("queryDeviceOnLine cameraId={},online={}", cameraId, online);
+        return online;
     }
 
     //设备在线状态监测异步
     public void setExceptionCallBack() {
-        hCNetSDK.NET_DVR_SetExceptionCallBack_V30(0,0, exceptionCallBack, null);
+        hCNetSDK.NET_DVR_SetExceptionCallBack_V30(0, 0, exceptionCallBack, null);
     }
 
 

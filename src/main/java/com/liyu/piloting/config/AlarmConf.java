@@ -36,6 +36,7 @@ public class AlarmConf {
     private List<Integer> dwAlarmType;
     private Integer status;
     private Integer model;
+    private Integer cameraListen;
 
 
 }
