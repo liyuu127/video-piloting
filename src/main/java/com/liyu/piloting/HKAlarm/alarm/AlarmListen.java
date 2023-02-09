@@ -217,15 +217,16 @@ public class AlarmListen {
             log.info("setExceptionCallBack..........");
         }
         while (true) {
-
-
             try {
                 if (lastCameraUpTime + alarmConf.getCameraUpInterval() < System.currentTimeMillis()) {
-                    WebSocketMessage<Camera> message = new WebSocketMessage<>();
-                    message.setContent(cameraList.get(0))
-                            .setMsgType(CAMERA_NET_RECOVER);
-                    WebSocketSender.pushMessageToAll(message);
-                    lastCameraUpTime = System.currentTimeMillis();
+                    if (userIdStatus.getOrDefault(lUserID[0], Boolean.FALSE)) {
+                        WebSocketMessage<Camera> message = new WebSocketMessage<>();
+                        message.setContent(cameraList.get(0))
+                                .setMsgType(CAMERA_NET_RECOVER);
+                        WebSocketSender.pushMessageToAll(message);
+                        lastCameraUpTime = System.currentTimeMillis();
+                        log.info("camera reconnect ");
+                    }
                 }
                 log.info("HK Alarm thread is running");
                 Thread.sleep(1000 * 10);
