@@ -37,6 +37,7 @@ public class AlarmConf {
     private Integer status;
     private Integer model;
     private Integer cameraListen;
+    private Long cameraUpInterval = 5000l;
 
 
 }

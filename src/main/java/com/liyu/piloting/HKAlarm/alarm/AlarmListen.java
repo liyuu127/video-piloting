@@ -13,7 +13,6 @@ import com.liyu.piloting.util.SystemThreadPool;
 import com.liyu.piloting.websocket.model.WebSocketMessage;
 import com.liyu.piloting.websocket.util.WebSocketSender;
 import com.sun.jna.Native;
-import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.liyu.piloting.HKAlarm.NetSDKDemo.HCNetSDK.EXCEPTION_EXCHANGE;
 import static com.liyu.piloting.HKAlarm.NetSDKDemo.HCNetSDK.NET_DVR_CHECK_USER_STATUS;
 import static com.liyu.piloting.websocket.constant.WebSocketConstant.CAMERA_NET_LOSE;
 import static com.liyu.piloting.websocket.constant.WebSocketConstant.CAMERA_NET_RECOVER;
@@ -44,6 +42,7 @@ public class AlarmListen {
     AlarmConf alarmConf;
     @Autowired
     FMSGCallBack_V31 fmsgCallBack_v31;
+    long lastCameraUpTime = System.currentTimeMillis();
 
     private List<Camera> cameraList;
     private FMSGCallBack_V31 fMSFCallBack_V31 = null;
@@ -60,10 +59,8 @@ public class AlarmListen {
     private HCNetSDK.FExceptionCallBack exceptionCallBack = new HCNetSDK.FExceptionCallBack() {
         @Override
         public void invoke(int dwType, int lUserID, int lHandle, Pointer pUser) {
-            NativeLong deviceid = pUser.getNativeLong(0);
 
-            System.out.println("预览异常：dwType=" + dwType + ",lUserID=" + lUserID + ",lHandle=" + lHandle + ",pUser="
-                    + deviceid.intValue());
+            log.info("预览异常：dwType=" + dwType + ",lUserID=" + lUserID + ",lHandle=" + lHandle + ",pUser=" + pUser);
 
             //宏定义 宏定义值 含义
             //EXCEPTION_EXCHANGE 0x8000 用户交互时异常（注册心跳超时，心跳间隔为2分钟）
@@ -103,17 +100,21 @@ public class AlarmListen {
             //EXCEPTION_PIC_RECONNECT_CLOSED 0x8048 关闭回显重连功能
             //EXCEPTION_PASSIVE_DECODE_RECONNECT_CLOSED 0x8049 关闭被动解码重连功能
             //EXCEPTION_PASSIVE_TRANS_RECONNECT_CLOSED 0x804a 关闭被动转码重连功能
-            if (dwType == EXCEPTION_EXCHANGE) {
+            if (dwType == 32774) {
                 userIdStatus.put(lUserID, false);
                 WebSocketMessage<Camera> message = new WebSocketMessage<>();
                 message.setContent(cameraList.get(0))
                         .setMsgType(CAMERA_NET_LOSE);
                 WebSocketSender.pushMessageToAll(message);
-            } else if (dwType == 0x8017) {
+                log.info("camera disconnect ");
+            } else if (dwType == 32790) {
                 userIdStatus.put(lUserID, true);
                 WebSocketMessage<Camera> message = new WebSocketMessage<>();
                 message.setContent(cameraList.get(0))
                         .setMsgType(CAMERA_NET_RECOVER);
+                WebSocketSender.pushMessageToAll(message);
+                lastCameraUpTime = System.currentTimeMillis();
+                log.info("camera reconnect ");
             }
 
         }
@@ -216,7 +217,16 @@ public class AlarmListen {
             log.info("setExceptionCallBack..........");
         }
         while (true) {
+
+
             try {
+                if (lastCameraUpTime + alarmConf.getCameraUpInterval() < System.currentTimeMillis()) {
+                    WebSocketMessage<Camera> message = new WebSocketMessage<>();
+                    message.setContent(cameraList.get(0))
+                            .setMsgType(CAMERA_NET_RECOVER);
+                    WebSocketSender.pushMessageToAll(message);
+                    lastCameraUpTime = System.currentTimeMillis();
+                }
                 log.info("HK Alarm thread is running");
                 Thread.sleep(1000 * 10);
             } catch (InterruptedException ex) {

@@ -20,8 +20,8 @@ public class WebSocketConstant {
     /**
      * 当前摄像头网络丢失
      */
-    public static final String CAMERA_NET_LOSE = "camera_net_lose";
-    public static final String CAMERA_NET_RECOVER = "camera_net_recover";
+    public static final String CAMERA_NET_LOSE = "camera_net_disconnect";
+    public static final String CAMERA_NET_RECOVER = "camera_net_reconnect";
     public static final String VIDEO_PILOTING_ALARM = "video_piloting_alarm";
     public static final String VIDEO_PILOTING_NO_ALARM = "video_piloting_no_alarm";
 
