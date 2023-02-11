@@ -43,6 +43,7 @@ public class AlarmListen {
     @Autowired
     FMSGCallBack_V31 fmsgCallBack_v31;
     long lastCameraUpTime = System.currentTimeMillis();
+    long lastCameraDownTime = System.currentTimeMillis();
 
     private List<Camera> cameraList;
     private FMSGCallBack_V31 fMSFCallBack_V31 = null;
@@ -100,7 +101,7 @@ public class AlarmListen {
             //EXCEPTION_PIC_RECONNECT_CLOSED 0x8048 关闭回显重连功能
             //EXCEPTION_PASSIVE_DECODE_RECONNECT_CLOSED 0x8049 关闭被动解码重连功能
             //EXCEPTION_PASSIVE_TRANS_RECONNECT_CLOSED 0x804a 关闭被动转码重连功能
-            if (dwType == 32774) {
+            if (dwType == 32774d || dwType == 32774) {
                 userIdStatus.put(lUserID, false);
                 WebSocketMessage<Camera> message = new WebSocketMessage<>();
                 message.setContent(cameraList.get(0))
@@ -216,17 +217,17 @@ public class AlarmListen {
             setExceptionCallBack();
             log.info("setExceptionCallBack..........");
         }
+        if(alarmConf.getDwCheckOnlineEnable()){
+            HCNetSDK.NET_DVR_LOCAL_CHECK_DEV check_dev = new HCNetSDK.NET_DVR_LOCAL_CHECK_DEV();
+            check_dev.writeField("dwCheckOnlineTimeout",alarmConf.getDwCheckOnlineTimeout().intValue());
+            hCNetSDK.NET_DVR_SetSDKLocalCfg(10, check_dev.getPointer());
+        }
+
         while (true) {
             try {
-                if (lastCameraUpTime + alarmConf.getCameraUpInterval() < System.currentTimeMillis()) {
-                    if (userIdStatus.getOrDefault(lUserID[0], Boolean.FALSE)) {
-                        WebSocketMessage<Camera> message = new WebSocketMessage<>();
-                        message.setContent(cameraList.get(0))
-                                .setMsgType(CAMERA_NET_RECOVER);
-                        WebSocketSender.pushMessageToAll(message);
-                        lastCameraUpTime = System.currentTimeMillis();
-                        log.info("camera reconnect ");
-                    }
+                //监听场景下主动发送 非监听时在查询时发送
+                if (CameraListenEnum.LISTEN.getValue() == alarmConf.getCameraListen()){
+                    sendReconnectT();
                 }
                 log.info("HK Alarm thread is running");
                 Thread.sleep(1000 * 10);
@@ -236,6 +237,30 @@ public class AlarmListen {
             }
         }
 
+    }
+
+    private void sendReconnectT() {
+        if (lastCameraUpTime + alarmConf.getCameraUpInterval() < System.currentTimeMillis()) {
+            if (userIdStatus.getOrDefault(lUserID[0], Boolean.FALSE)) {
+                WebSocketMessage<Camera> message = new WebSocketMessage<>();
+                message.setContent(cameraList.get(0))
+                        .setMsgType(CAMERA_NET_RECOVER);
+                WebSocketSender.pushMessageToAll(message);
+                lastCameraUpTime = System.currentTimeMillis();
+                log.info("camera reconnect ");
+            }
+        }
+    }
+
+    private void sendDisconnectT() {
+        if (lastCameraDownTime + alarmConf.getCameraDownInterval() < System.currentTimeMillis()) {
+            WebSocketMessage<Camera> message = new WebSocketMessage<>();
+            message.setContent(cameraList.get(0))
+                    .setMsgType(CAMERA_NET_LOSE);
+            WebSocketSender.pushMessageToAll(message);
+            lastCameraDownTime = System.currentTimeMillis();
+            log.info("camera disconnect ");
+        }
     }
 
     @PreDestroy
@@ -264,6 +289,14 @@ public class AlarmListen {
         } else if (CameraListenEnum.QUERY.getValue() == alarmConf.getCameraListen()) {
             int userId = lUserID[cameraId];
             online = hCNetSDK.NET_DVR_RemoteControl(userId, NET_DVR_CHECK_USER_STATUS, null, 0);
+
+            if (online) {
+                userIdStatus.put(lUserID[cameraId], true);
+                sendReconnectT();
+            } else {
+                userIdStatus.put(lUserID[cameraId], false);
+                sendDisconnectT();
+            }
         }
         log.info("queryDeviceOnLine cameraId={},online={}", cameraId, online);
         return online;

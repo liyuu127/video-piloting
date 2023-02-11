@@ -38,6 +38,9 @@ public class AlarmConf {
     private Integer model;
     private Integer cameraListen;
     private Long cameraUpInterval = 5000l;
+    private Long cameraDownInterval = 5000l;
+    private Boolean dwCheckOnlineEnable = false;
+    private Long dwCheckOnlineTimeout = 3000l;
 
 
 }

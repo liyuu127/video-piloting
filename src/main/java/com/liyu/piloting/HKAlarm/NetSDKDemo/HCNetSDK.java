@@ -7795,7 +7795,7 @@ DVR实现巡航数据结构
 
 
     public static class NET_DVR_LOCAL_CHECK_DEV extends Structure {
-        public int dwCheckOnlineTimeout;     //巡检时间间隔，单位ms  最小值为30s，最大值120s。为0时，表示用默认值(120s)
+        public int dwCheckOnlineTimeout=3000;     //巡检时间间隔，单位ms  最小值为30s，最大值120s。为0时，表示用默认值(120s)
         public int dwCheckOnlineNetFailMax;  //由于网络原因失败的最大累加次数；超过该值SDK才回调用户异常，为0时，表示使用默认值1
         public byte[] byRes = new byte[256];
     }
