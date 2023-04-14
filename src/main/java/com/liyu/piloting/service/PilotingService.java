@@ -545,7 +545,21 @@ public class PilotingService {
         //正向行驶
         if (getLineInstance().getDirection() == null || getLineInstance().getDirection() == 0) {
             log.info("拉取摄像头 无法判断行驶方向 direction={}", getLineInstance().getDirection());
-            return false;
+            Point startPoint = new Point();
+            startPoint.setLatitude(getLineInstance().getStartStation().getLatitude());
+            startPoint.setLongitude(getLineInstance().getStartStation().getLongitude());
+            Point endPoint = new Point();
+            endPoint.setLatitude(getLineInstance().getEndStation().getLatitude());
+            endPoint.setLongitude(getLineInstance().getEndStation().getLongitude());
+            double startDistance = distanceWithReferencePoint(startPoint, 3);
+            double endDistance = distanceWithReferencePoint(endPoint, 3);
+            if (startDistance < endDistance) {
+                log.info("拉取摄像头 使用startDistance方向距离");
+                pullCameraSatisfyDistanceMeter = lineJudgmentConfig.getPullCameraSatisfyDistancePositiveMeter();
+            }else {
+                log.info("拉取摄像头 endDistance");
+                pullCameraSatisfyDistanceMeter = lineJudgmentConfig.getPullCameraSatisfyDistanceNegativeMeter();
+            }
         } else if (getLineInstance().getDirection() > 0) {
             log.info("拉取摄像头 正向行驶方向 direction={}", getLineInstance().getDirection());
             pullCameraSatisfyDistanceMeter = lineJudgmentConfig.getPullCameraSatisfyDistancePositiveMeter();
