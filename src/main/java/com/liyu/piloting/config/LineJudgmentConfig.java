@@ -68,7 +68,7 @@ public class LineJudgmentConfig {
         return this.camera.getPullCameraSatisfyDistancePositiveMeter();
     }
     public int getPullCameraSatisfyDistanceNegativeMeter() {
-        return this.camera.getPullCameraSatisfyDistancePositiveMeter();
+        return this.camera.getPullCameraSatisfyDistanceNegativeMeter();
     }
 
     public int getPullCameraSatisfyDistanceCount() {
