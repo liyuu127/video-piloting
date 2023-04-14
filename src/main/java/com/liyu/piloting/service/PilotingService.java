@@ -509,6 +509,7 @@ public class PilotingService {
             int cameraDirection = directionWithReferencePoint(referencePoint, lineJudgmentConfig.getPullCameraJudgmentPositionCount(),
                     lineJudgmentConfig.getPullCameraJudgmentIntervalMeter(), lineJudgmentConfig.getPullCameraDirectionScoreThreshold());
             log.info("判断相对摄像头方向 cameraDirection={}", cameraDirection);
+            //驶离的时候判断不了方向是可以的
             if (cameraDirection <= 0) {
                 continue;
             }
