@@ -31,13 +31,13 @@ public class LineInstance {
     private static int LINE_STATUS_STOP = 5;
 
     private static int LINE_DIRECTION_POSITIVE = 1;
-    private static int LINE_DIRECTION_NEGATIVE = 2;
+    private static int LINE_DIRECTION_NEGATIVE = -1;
 
     private StationPosition startStation;
     private List<Camera> cameraList;
     private StationPosition endStation;
     /**
-     * 1 正向，2：反向
+     * 1 正向，-1：反向
      */
     private Integer direction;
     private Long directionTimestamp;

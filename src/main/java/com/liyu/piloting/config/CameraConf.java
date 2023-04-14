@@ -18,9 +18,13 @@ public class CameraConf {
      */
     private int pullCameraJudgmentPositionCount = 5;
     /**
-     * 拉取摄像头的符合距离的大小
+     * 正向拉取摄像头的符合距离的大小
      */
-    private int pullCameraSatisfyDistanceMeter = 1000;
+    private int pullCameraSatisfyDistancePositiveMeter = 1000;
+    /**
+     * 反向拉取摄像头的符合距离的大小
+     */
+    private int pullCameraSatisfyDistanceNegativeMeter = 1000;
     /**
      * 拉取摄像头的符合距离的位置个数，必须低于采集的数量
      */

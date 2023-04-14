@@ -220,7 +220,7 @@ public class PilotingService {
             //判断是否拉取下一个摄像头
             pullNextCamera();
         } else {
-            log.debug("pullCameraAndAlarm count low deque.size()={},pullCameraJudgmentPositionCount={}", deque.size(), pullCameraJudgmentPositionCount);
+            log.info("pullCameraAndAlarm count low deque.size()={},pullCameraJudgmentPositionCount={}", deque.size(), pullCameraJudgmentPositionCount);
         }
     }
 
@@ -332,9 +332,41 @@ public class PilotingService {
             int cameraDirection = directionWithReferencePoint(referencePoint, pullCameraJudgmentPositionCount, pullCameraJudgmentIntervalMeter, pullCameraDirectionScoreThreshold);
             over = cameraOverJudgmentWithDirection(referencePoint, pullCameraOverPositionCount, cameraOverSatisfyDistanceMeter, cameraOverSatisfyDistanceCount, cameraDirection);
         } else if (lineJudgmentConfig.getModel() == JudgmentModelEnum.DISTANCE.getModel()) {
-            over = cameraOverJudgmentWithDistance(referencePoint, pullCameraOverPositionCount, cameraOverSatisfyDistanceMeter, cameraOverSatisfyDistanceCount);
+//            over = cameraOverJudgmentWithDistance(referencePoint, pullCameraOverPositionCount, cameraOverSatisfyDistanceMeter, cameraOverSatisfyDistanceCount);
+            over = cameraOverJudgmentWithDistanceAndDirection(referencePoint);
+
         }
         return over;
+    }
+
+    /**
+     * 根据道口位置和方向判断是否应该停止拉流
+     *
+     * @param referencePoint 参考点 即道口位置
+     * @return 拉流时否结束
+     */
+    private boolean cameraOverJudgmentWithDistanceAndDirection(Point referencePoint) {
+        //先判断相对道口方向,如果相对方向为负说明正在驶离道口
+        int pullCameraJudgmentPositionCount = lineJudgmentConfig.getPullCameraJudgmentPositionCount();
+        double pullCameraJudgmentIntervalMeter = lineJudgmentConfig.getPullCameraJudgmentIntervalMeter();
+        int pullCameraDirectionScoreThreshold = lineJudgmentConfig.getPullCameraDirectionScoreThreshold();
+        int cameraDirection = directionWithReferencePoint(referencePoint, pullCameraJudgmentPositionCount, pullCameraJudgmentIntervalMeter, pullCameraDirectionScoreThreshold);
+        log.info("判断相对道口方向 cameraDirection={}", cameraDirection);
+        if (cameraDirection > 0) {
+            return false;
+        }
+        //方向满足后判定驶离举例是否满足
+        //摄像头离开位置的数量
+        int pullCameraOverPositionCount = lineJudgmentConfig.getPullCameraOverPositionCount();
+        //驶离多远算摄像头离站
+        int cameraOverSatisfyDistanceMeter = lineJudgmentConfig.getCameraOverSatisfyDistanceMeter();
+        //摄像头离站效位置数量
+        int cameraOverSatisfyDistanceCount = lineJudgmentConfig.getCameraOverSatisfyDistanceCount();
+        int satisfyDistanceCountWithReferencePoint = getSatisfyDistanceCountWithReferencePoint(referencePoint, pullCameraOverPositionCount, cameraOverSatisfyDistanceMeter, false);
+        boolean cameraOver = satisfyDistanceCountWithReferencePoint >= cameraOverSatisfyDistanceCount;
+        log.info("判断驶离道口距离是否满足 cameraOver={},satisfyDistanceCountWithReferencePoint={},cameraOverSatisfyDistanceCount={}", cameraOver, satisfyDistanceCountWithReferencePoint, cameraOverSatisfyDistanceCount);
+
+        return cameraOver;
     }
 
 
@@ -470,11 +502,22 @@ public class PilotingService {
         double min = Double.MAX_VALUE;
         Camera next = null;
         for (Camera camera : cameraList) {
+            //判断相对方向,驶离方向不拉流
+            Point referencePoint = new Point();
+            referencePoint.setLatitude(camera.getLatitude());
+            referencePoint.setLongitude(camera.getLongitude());
+            int cameraDirection = directionWithReferencePoint(referencePoint, lineJudgmentConfig.getPullCameraJudgmentPositionCount(),
+                    lineJudgmentConfig.getPullCameraJudgmentIntervalMeter(), lineJudgmentConfig.getPullCameraDirectionScoreThreshold());
+            log.info("判断相对摄像头方向 cameraDirection={}", cameraDirection);
+            if (cameraDirection <= 0) {
+                continue;
+            }
             //计算是否满足距离
             if (!cameraPositionInDistance(camera)) {
                 log.info("pullNextCameraWithDistance unsatisfied camera={}", camera);
                 continue;
             }
+
             //计算平均距离
             Point rp = new Point();
             rp.setLatitude(camera.getLatitude());
@@ -491,13 +534,27 @@ public class PilotingService {
 
     /**
      * 摄像机位置是否在拉取范围内
+     * 根据方向判断左右距离
      *
      * @param next 摄像机
      * @return true 在拉取位置内 false 不在
      */
     private boolean cameraPositionInDistance(Camera next) {
+        //获取方向
+        int pullCameraSatisfyDistanceMeter;
+        //正向行驶
+        if (getLineInstance().getDirection() == null || getLineInstance().getDirection() == 0) {
+            log.info("拉取摄像头 无法判断行驶方向 direction={}", getLineInstance().getDirection());
+            return false;
+        } else if (getLineInstance().getDirection() > 0) {
+            log.info("拉取摄像头 正向行驶方向 direction={}", getLineInstance().getDirection());
+            pullCameraSatisfyDistanceMeter = lineJudgmentConfig.getPullCameraSatisfyDistancePositiveMeter();
+        } else {
+            log.info("拉取摄像头 反向行驶方向 direction={}", getLineInstance().getDirection());
+            pullCameraSatisfyDistanceMeter = lineJudgmentConfig.getPullCameraSatisfyDistanceNegativeMeter();
+        }
+
         int pullCameraJudgmentPositionCount = lineJudgmentConfig.getPullCameraJudgmentPositionCount();
-        int pullCameraSatisfyDistanceMeter = lineJudgmentConfig.getPullCameraSatisfyDistanceMeter();
         int pullCameraSatisfyDistanceCount = lineJudgmentConfig.getPullCameraSatisfyDistanceCount();
 
         Point rp = new Point();
@@ -599,13 +656,14 @@ public class PilotingService {
                 getLineInstance().directionNegative();
             } else {
                 //方向未计算出
-                log.debug("directionJudgment direction cal fail");
+                log.info("directionJudgment direction cal fail,try use pre direction direction={}", getLineInstance().getDirection());
+
                 success = false;
             }
             log.info("directionJudgment direction={},startDirection={},endDirection={},startDistance={},endDistance={}", getLineInstance().getDirection(), startDirection, endDirection, startDistance, endDistance);
         } else {
             //方向暂时无法计算
-            log.debug("directionJudgment direction cal queue min");
+            log.info("directionJudgment direction cal queue min,try use pre direction direction={}", getLineInstance().getDirection());
             success = false;
         }
         return success;
