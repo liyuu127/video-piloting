@@ -352,7 +352,7 @@ public class PilotingService {
         int pullCameraDirectionScoreThreshold = lineJudgmentConfig.getPullCameraDirectionScoreThreshold();
         int cameraDirection = directionWithReferencePoint(referencePoint, pullCameraJudgmentPositionCount, pullCameraJudgmentIntervalMeter, pullCameraDirectionScoreThreshold);
         log.info("判断相对道口方向 cameraDirection={}", cameraDirection);
-        if (cameraDirection > 0) {
+        if (cameraDirection >= 0) {
             return false;
         }
         //方向满足后判定驶离举例是否满足
@@ -510,7 +510,7 @@ public class PilotingService {
                     lineJudgmentConfig.getPullCameraJudgmentIntervalMeter(), lineJudgmentConfig.getPullCameraDirectionScoreThreshold());
             log.info("判断相对摄像头方向 cameraDirection={}", cameraDirection);
             //驶离的时候判断不了方向是可以的
-            if (cameraDirection <= 0) {
+            if (cameraDirection < 0) {
                 continue;
             }
             //计算是否满足距离
